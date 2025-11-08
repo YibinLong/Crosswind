@@ -8,7 +8,11 @@
       "WebFetch(domain:ai.googleblog.com)",
       "WebFetch(domain:blog.research.google)",
       "WebFetch(domain:anthropic.com)",
-      "WebFetch(domain:research.google)"
+      "WebFetch(domain:research.google)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run)",
+      "Bash(pnpm install:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []

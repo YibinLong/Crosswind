@@ -2,7 +2,7 @@
 
 **Project Name:** Crosswind
 **App Type / Goal:** AI-driven weather conflict detection and rescheduling system for flight training schedules
-**Platform:** Web (React Dashboard + Cloud Backend)
+**Platform:** Web (Next.js App Router + Server Components on AWS)
 **Constraints:** Use TypeScript (frontend + backend). PostgreSQL for data. WeatherAPI.com for weather.
 **Special Notes:** Must support AI-assisted reasoning for rescheduling based on pilot training level.
 
@@ -40,17 +40,17 @@ C. Notification + dashboard system
 
 ## **4. Tech Stack (Solo-AI Friendly)**
 
-| Layer                    | Tech                                 | Rationale                                      |
-| ------------------------ | ------------------------------------ | ---------------------------------------------- |
-| **Frontend**             | React + TypeScript + Vite            | Familiar, easy to scaffold, fast dev DX        |
-| **Styling**              | TailwindCSS                          | Simple for AI to reason about layouts          |
-| **Backend**              | Node.js + Express (TypeScript)       | Clean TypeScript APIs; minimal boilerplate     |
-| **Database**             | PostgreSQL                           | Strong relational schema and supported locally |
-| **ORM**                  | Prisma                               | Schema-based, auto-generates types             |
-| **Weather API**          | WeatherAPI.com                       | Simple JSON API with clear rate limits         |
-| **AI Layer**             | OpenAI SDK (gpt-4o or gpt-4-turbo)   | Natural language scheduling reasoning          |
-| **Email / Notification** | Resend or Nodemailer                 | Easy integration, tested ecosystem             |
-| **Deployment**           | Render (backend) + Vercel (frontend) | Simplifies hosting for solo devs               |
+| Layer                    | Tech                                                                 | Rationale                                                         |
+| ------------------------ | -------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| **Frontend**             | Next.js (App Router) + TypeScript                                    | Unified SSR/SSG, routing, and bundling; excellent DX              |
+| **Styling**              | TailwindCSS                                                          | Fast, composable UI                                               |
+| **Backend**              | Next.js API Routes + Server Actions (Node.js/TypeScript)             | No separate Express service required for MVP                      |
+| **Database**             | PostgreSQL (Amazon RDS in prod, local Postgres in dev)               | Strong relational schema, managed option on AWS                   |
+| **ORM**                  | Prisma                                                                | Schema-first, typed client                                        |
+| **Weather API**          | WeatherAPI.com                                                        | Simple JSON API with clear rate limits                            |
+| **AI Layer**             | OpenAI SDK (gpt-4o or gpt-4-turbo)                                   | Natural language scheduling reasoning                             |
+| **Email / Notification** | Amazon SES (or Resend for dev)                                       | Reliable email on AWS                                             |
+| **Deployment**           | AWS (Amplify Hosting or CloudFront + Lambda/Edge; API via Lambda)    | Host Next.js on AWS; cron via EventBridge; logs in CloudWatch     |
 
 ---
 
@@ -62,7 +62,7 @@ C. Notification + dashboard system
 As a scheduler, I want flights automatically checked for unsafe weather so I can cancel before students arrive.
 **Acceptance Criteria:**
 
-* System fetches weather for each active booking (hourly cron).
+* System fetches weather for each active booking (hourly cron: EventBridge in prod; node-cron in dev).
 * Detects unsafe conditions per training level.
 * Flags conflict in database.
   **Data Model Notes:**
@@ -177,23 +177,28 @@ model RescheduleSuggestion {
 
 ## **8. .env Setup**
 
-Example `.env` template:
+Example `.env.local` template (for Next.js dev):
 
 ```bash
 DATABASE_URL="postgresql://user:password@localhost:5432/crosswind"
 WEATHER_API_KEY="your_weatherapi_key"
 OPENAI_API_KEY="your_openai_key"
-EMAIL_SMTP_SERVER="smtp.gmail.com"
+EMAIL_SMTP_SERVER="smtp.gmail.com" # or use SES variables below
 EMAIL_USER="noreply@crosswind.app"
 EMAIL_PASS="your_email_password"
+# For Amazon SES (recommended in prod):
+AWS_SES_REGION="us-east-1"
+AWS_SES_ACCESS_KEY_ID="your_key"
+AWS_SES_SECRET_ACCESS_KEY="your_secret"
 DEBUG=true
 ```
 
 **Manual Setup Notification:**
 
-* You must create a **WeatherAPI.com** account and copy your API key into `.env`.
+* You must create a **WeatherAPI.com** account and copy your API key into `.env.local`.
 * Create an **OpenAI API key** (under API Keys page).
-* Add SMTP credentials (Gmail or Resend).
+* Add email credentials: for dev use Gmail/Resend; for prod use **Amazon SES**.
+* On AWS, store secrets in **AWS Secrets Manager** or **SSM Parameter Store** and load them as environment variables for the runtime (Amplify/Lambda).
 
 ---
 
@@ -220,10 +225,10 @@ dist/
 
 ## **10. Debugging & Logging**
 
-* Backend uses `pino` for structured logging.
-* Toggle debug logs with `DEBUG=true` in `.env`.
-* Store logs in `logs/app.log`.
-* In dev, console logs all API requests.
+* Server code (API routes/server actions) uses `pino` for structured logging.
+* Toggle debug logs with `DEBUG=true` in `.env.local`.
+* In dev, Next.js logs requests to console; optionally write to `logs/app.log`.
+* In AWS, ship server logs to **CloudWatch Logs**.
 
 ---
 
@@ -231,48 +236,66 @@ dist/
 
 1. **Create PostgreSQL Database:**
 
-   * Run locally using `initdb` or Docker (`docker run postgres`).
-   * Update `DATABASE_URL` in `.env`.
-   * Run `npx prisma migrate dev`.
+   * Dev: run locally using `initdb` or Docker (`docker run -d -p 5432:5432 postgres`).
+   * Prod: provision **Amazon RDS for PostgreSQL**.
+   * Update `DATABASE_URL` in `.env.local` (dev) and in AWS environment.
+   * Run `npx prisma migrate dev` (dev) and `prisma migrate deploy` (prod CI/CD).
 
 2. **Configure WeatherAPI:**
 
    * Go to [weatherapi.com](https://www.weatherapi.com).
-   * Copy API key to `.env`.
+   * Copy API key to `.env.local` (dev) and to AWS Secrets/Parameters (prod).
 
 3. **Configure Email:**
 
-   * For Gmail: enable "App Passwords" → use generated key.
-   * For Resend: create domain + API key.
+   * Dev: Gmail App Passwords or Resend.
+   * Prod: **Amazon SES** (verify domain/sender, create IAM credentials or use execution role).
 
 4. **Set up AI Provider:**
 
    * Use OpenAI SDK; ensure billing enabled.
 
+5. **Set up Scheduling (Cron):**
+
+   * Dev: use `node-cron` task or manual trigger endpoint.
+   * Prod (AWS): create an **EventBridge** scheduled rule that invokes a Lambda to run the weather check logic (can share code with Next.js API or be a small separate worker).
+
 ---
 
 ## **12. Deployment Plan**
 
-**Local Development:**
+**Local Development (Next.js single app):**
 
 ```bash
 # 1. Install dependencies
-npm install
+npm install  # or: pnpm install
 
 # 2. Start PostgreSQL (if using Docker)
-docker run -d -p 5432:5432 postgres
+docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=crosswind postgres
 
-# 3. Run Prisma migrations
+# 3. Run Prisma migrations and generate client
 npx prisma migrate dev
+npx prisma generate
 
-# 4. Start backend
+# 4. Start Next.js (frontend + API routes)
 npm run dev
-
-# 5. Start frontend
-npm run start
 ```
 
-**Deploy:**
+**Deploy to AWS (pick one approach):**
 
-* Frontend → Vercel (`vercel --prod`)
-* Backend → Render / Railway (`git push render main`)
+*Option A — AWS Amplify Hosting (simplest):*
+* Connect Git repo to **AWS Amplify Hosting**.
+* Amplify detects Next.js, builds, and deploys SSR/ISR automatically.
+* Configure environment variables and secrets in Amplify.
+* Use **RDS PostgreSQL** and **SES**.
+* For cron jobs, add an **EventBridge** rule + **Lambda** that runs the weather check logic (invoke an internal endpoint or share library code).
+
+*Option B — CloudFront + Lambda@Edge / API Gateway + Lambda (fine-grained control):*
+* Build Next.js with output suitable for serverless (e.g., via Serverless/SST or Next.js serverless target).
+* Serve static assets via **S3 + CloudFront**.
+* Deploy SSR handlers and API routes to **Lambda (or Lambda@Edge)** behind **API Gateway**/CloudFront.
+* Provision **RDS PostgreSQL**, configure **Secrets Manager**/**SSM** params, and set environment for Lambdas.
+* Schedule cron via **EventBridge** to a worker Lambda for weather checks.
+
+Database migrations in CI/CD:
+* Run `prisma migrate deploy` against RDS as part of release.

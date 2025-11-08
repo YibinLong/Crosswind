@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:www.technologyreview.ai)",
+      "WebFetch(domain:arxiv.org)",
+      "WebFetch(domain:openai.com)",
+      "WebFetch(domain:ai.googleblog.com)",
+      "WebFetch(domain:blog.research.google)",
+      "WebFetch(domain:anthropic.com)",
+      "WebFetch(domain:research.google)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

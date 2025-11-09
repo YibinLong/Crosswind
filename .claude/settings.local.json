@@ -22,7 +22,14 @@
       "Bash(npx prisma db pull:*)",
       "Bash(npx prisma generate:*)",
       "mcp__context7__resolve-library-id",
-      "mcp__context7__get-library-docs"
+      "mcp__context7__get-library-docs",
+      "Bash(npx next dev)",
+      "Bash(node:*)",
+      "Bash(yes:*)",
+      "Bash(/Library/PostgreSQL/17/bin/psql:*)",
+      "Bash(PGPASSWORD=\"Google!2\" /Library/PostgreSQL/17/bin/psql:*)",
+      "Bash(curl:*)",
+      "Bash(kill:*)"
     ],
     "deny": [],
     "ask": []

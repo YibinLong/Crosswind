@@ -12,7 +12,15 @@
       "Bash(npm run dev:*)",
       "Bash(npm run)",
       "Bash(pnpm install:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(psql:*)",
+      "Bash(createdb:*)",
+      "Bash(npx prisma init:*)",
+      "Bash(npx prisma migrate:*)",
+      "Bash(PGPASSWORD=password psql:*)",
+      "Bash(npm run db:seed:*)",
+      "Bash(npx prisma db pull:*)",
+      "Bash(npx prisma generate:*)"
     ],
     "deny": [],
     "ask": []

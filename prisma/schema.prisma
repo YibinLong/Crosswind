@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("student")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  student   Student?
+
+  @@map("users")
+}
+
+model Student {
+  id            Int       @id @default(autoincrement())
+  userId        Int?      @unique
+  name          String
+  email         String    @unique
+  phone         String?
+  trainingLevel String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  bookings      Booking[]
+  user          User?     @relation(fields: [userId], references: [id])
+
+  @@map("students")
+}
+
+model Instructor {
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String    @unique
+  phone     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  bookings  Booking[]
+
+  @@map("instructors")
+}
+
+model Aircraft {
+  id         Int       @id @default(autoincrement())
+  tailNumber String    @unique
+  model      String
+  status     String    @default("available")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  bookings   Booking[]
+
+  @@map("aircraft")
+}
+
+model Booking {
+  id                    Int                    @id @default(autoincrement())
+  studentId             Int
+  instructorId          Int
+  aircraftId            Int
+  scheduledDate         DateTime
+  departureLat          Float
+  departureLon          Float
+  arrivalLat            Float?
+  arrivalLon            Float?
+  status                String                 @default("scheduled")
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  auditLogs             AuditLog[]
+  aircraft              Aircraft               @relation(fields: [aircraftId], references: [id])
+  instructor            Instructor             @relation(fields: [instructorId], references: [id])
+  student               Student                @relation(fields: [studentId], references: [id])
+  rescheduleSuggestions RescheduleSuggestion[]
+  weatherReports        WeatherReport[]
+
+  @@map("bookings")
+}
+
+model WeatherReport {
+  id               Int      @id @default(autoincrement())
+  bookingId        Int
+  location         String
+  windKts          Float?
+  windGustKts      Float?
+  visibility       Float?
+  ceilingFt        Int?
+  condition        String?
+  temperature      Float?
+  isSafe           Boolean  @default(true)
+  violatedMinimums String[]
+  createdAt        DateTime @default(now())
+  booking          Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("weather_reports")
+}
+
+model RescheduleSuggestion {
+  id             Int      @id @default(autoincrement())
+  bookingId      Int
+  proposedDate   DateTime
+  proposedTime   String
+  weatherSummary String
+  confidence     Float
+  reason         String
+  selected       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  booking        Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("reschedule_suggestions")
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  bookingId   Int
+  action      String
+  performedBy String
+  details     String?
+  createdAt   DateTime @default(now())
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("audit_logs")
+}

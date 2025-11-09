@@ -4,13 +4,13 @@
 
 ---
 
-## **PHASE 1: PROJECT SETUP & DATABASE** ⬜
+## **PHASE 1: PROJECT SETUP & DATABASE** ✅
 
-### **Epic 1.1: Environment Setup & Dependencies** ⬜
+### **Epic 1.1: Environment Setup & Dependencies** ✅
 
 **Story:** Configure development environment and install backend dependencies
 
-- ⬜ **Task 1.1.1:** Install backend dependencies (Prisma, OpenAI SDK, nodemailer/AWS SES SDK, node-cron)
+- ✅ **Task 1.1.1:** Install backend dependencies (Prisma, OpenAI SDK, nodemailer/AWS SES SDK, node-cron)
   - Install `@prisma/client`, `prisma` (dev)
   - Install `openai` SDK for AI rescheduling
   - Install `nodemailer` for email (dev) or `@aws-sdk/client-ses` for production
@@ -18,35 +18,35 @@
   - Install `bcrypt` and `jsonwebtoken` for authentication
   - Install `zod` for validation (already in package.json)
 
-- ⬜ **Task 1.1.2:** Create `.env.local` file with all required environment variables
+- ✅ **Task 1.1.2:** Create `.env` file with all required environment variables
   - Add `DATABASE_URL` for PostgreSQL connection
   - Add `WEATHER_API_KEY` (WeatherAPI.com)
-  - Add `OPENAI_API_KEY` 
+  - Add `OPENAI_API_KEY`
   - Add `EMAIL_SMTP_SERVER`, `EMAIL_USER`, `EMAIL_PASS` (dev)
   - Add `AWS_SES_REGION`, `AWS_SES_ACCESS_KEY_ID`, `AWS_SES_SECRET_ACCESS_KEY` (prod)
   - Add `NEXTAUTH_SECRET` and `NEXTAUTH_URL` for authentication
   - Add `DEBUG=true` for development
 
-- ⬜ **Task 1.1.3:** Add `.env.local` to `.gitignore` and create `.env.example` template
+- ✅ **Task 1.1.3:** Add `.env` to `.gitignore` and create `.env.example` template
 
-**Acceptance:** All dependencies installed, `.env.local` configured, environment variables documented
+**Acceptance:** All dependencies installed, `.env` configured, environment variables documented
 
 ---
 
-### **Epic 1.2: Database Setup with Prisma** ⬜
+### **Epic 1.2: Database Setup with Prisma** ✅
 
 **Story:** Set up PostgreSQL database and create schema using Prisma
 
-- ⬜ **Task 1.2.1:** Set up local PostgreSQL database
+- ✅ **Task 1.2.1:** Set up local PostgreSQL database
   - Option A: Install PostgreSQL locally on macOS (`brew install postgresql`)
   - Option B: Run PostgreSQL via Docker (`docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=crosswind postgres`)
   - Verify connection works
 
-- ⬜ **Task 1.2.2:** Initialize Prisma in the project
+- ✅ **Task 1.2.2:** Initialize Prisma in the project
   - Run `npx prisma init`
   - Configure `prisma/schema.prisma` with PostgreSQL provider
 
-- ⬜ **Task 1.2.3:** Create Prisma schema models based on PRD.md requirements
+- ✅ **Task 1.2.3:** Create Prisma schema models based on PRD.md requirements
   - Create `Student` model (id, name, email, phone, trainingLevel, createdAt, updatedAt)
   - Create `Instructor` model (id, name, email, phone, createdAt, updatedAt)
   - Create `Aircraft` model (id, tailNumber, model, status, createdAt, updatedAt)
@@ -56,15 +56,15 @@
   - Create `AuditLog` model (id, bookingId, action, performedBy, details, createdAt)
   - Set up proper relationships (foreign keys, relations)
 
-- ⬜ **Task 1.2.4:** Run initial Prisma migration
+- ✅ **Task 1.2.4:** Run initial Prisma migration
   - Run `npx prisma migrate dev --name init`
   - Verify tables are created in PostgreSQL
 
-- ⬜ **Task 1.2.5:** Generate Prisma Client
+- ✅ **Task 1.2.5:** Generate Prisma Client
   - Run `npx prisma generate`
   - Test database connection with a simple query
 
-- ⬜ **Task 1.2.6:** Create database seed file with mock data
+- ✅ **Task 1.2.6:** Create database seed file with mock data
   - Create `prisma/seed.ts` with sample students, instructors, aircraft, and bookings
   - Add seed script to `package.json`
   - Run `npx prisma db seed` to populate test data

@@ -47,6 +47,7 @@
     "@types/nodemailer": "^7.0.3",
     "@vercel/analytics": "latest",
     "autoprefixer": "^10.4.20",
+    "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

@@ -29,7 +29,14 @@
       "Bash(/Library/PostgreSQL/17/bin/psql:*)",
       "Bash(PGPASSWORD=\"Google!2\" /Library/PostgreSQL/17/bin/psql:*)",
       "Bash(curl:*)",
-      "Bash(kill:*)"
+      "Bash(kill:*)",
+      "mcp__web-search-prime__webSearchPrime",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(npx tsx:*)",
+      "Bash(for:*)",
+      "Bash(do echo:*)",
+      "Bash(done:*)"
     ],
     "deny": [],
     "ask": []

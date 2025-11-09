@@ -1,6 +1,9 @@
 import { PrismaClient } from '@prisma/client';
 import { weatherService } from './weather';
 import { WeatherMinimumsService } from './weatherMinimums';
+import { notificationService } from './notification';
+import { generateWeatherConflictEmail } from '../email-templates';
+import { logger } from '../logger';
 
 export interface MonitoringResult {
   totalBookings: number;
@@ -108,7 +111,7 @@ export class WeatherMonitorService {
           );
 
           // Create weather report
-          const weatherReport = await this.prisma.weatherReport.create({
+          const departureWeatherReport = await this.prisma.weatherReport.create({
             data: {
               bookingId: booking.id,
               location: 'departure',
@@ -175,6 +178,12 @@ export class WeatherMonitorService {
                 ].join('; ')}`
               }
             });
+
+            // Send email notifications for the new conflict
+            await this.sendWeatherConflictNotifications(booking, departureWeatherReport, arrivalSafety, [
+              ...safetyEvaluation.violatedMinimums,
+              ...(arrivalSafety?.violatedMinimums || [])
+            ]);
           }
 
           result.details.push({
@@ -344,6 +353,101 @@ export class WeatherMonitorService {
 
     } finally {
       await this.prisma.$disconnect();
+    }
+  }
+
+  /**
+   * Send weather conflict notifications to student and instructor
+   */
+  private async sendWeatherConflictNotifications(
+    booking: any,
+    departureWeatherReport: any,
+    arrivalSafety: any,
+    violatedMinimums: string[]
+  ): Promise<void> {
+    try {
+      logger.info('Sending weather conflict notifications', {
+        bookingId: booking.id,
+        studentId: booking.studentId,
+        instructorId: booking.instructorId,
+      });
+
+      // Prepare recipients
+      const recipients = [
+        {
+          email: booking.student.email,
+          name: booking.student.name,
+        }
+      ];
+
+      // Add instructor if exists
+      if (booking.instructor) {
+        recipients.push({
+          email: booking.instructor.email,
+          name: booking.instructor.name,
+        });
+      }
+
+      // Generate email content
+      const emailTemplate = generateWeatherConflictEmail({
+        student: booking.student,
+        booking: booking,
+        weatherReport: departureWeatherReport,
+        instructorName: booking.instructor?.name,
+        trainingLevelMinimums: violatedMinimums,
+      });
+
+      // Send notification
+      const notificationResult = await notificationService.sendNotification({
+        type: 'weather_conflict',
+        recipients,
+        subject: emailTemplate.subject,
+        htmlContent: emailTemplate.htmlContent,
+        textContent: emailTemplate.textContent,
+        data: {
+          bookingId: booking.id,
+          weatherReportId: departureWeatherReport.id,
+          violatedMinimums,
+        },
+      });
+
+      if (notificationResult.success) {
+        logger.info('Weather conflict notifications sent successfully', {
+          bookingId: booking.id,
+          recipientCount: recipients.length,
+          messageId: notificationResult.messageId,
+        });
+
+        // Log notification in audit trail
+        await this.prisma.auditLog.create({
+          data: {
+            bookingId: booking.id,
+            action: 'weather_conflict_notification_sent',
+            performedBy: 'system',
+            details: `Weather conflict notifications sent to ${recipients.map(r => r.email).join(', ')}. Message ID: ${notificationResult.messageId}`,
+          },
+        });
+      } else {
+        logger.error('Failed to send weather conflict notifications', {
+          bookingId: booking.id,
+          error: notificationResult.error,
+        });
+
+        // Log failed notification in audit trail
+        await this.prisma.auditLog.create({
+          data: {
+            bookingId: booking.id,
+            action: 'weather_conflict_notification_failed',
+            performedBy: 'system',
+            details: `Failed to send weather conflict notifications. Error: ${notificationResult.error}`,
+          },
+        });
+      }
+    } catch (error) {
+      logger.error('Error sending weather conflict notifications', {
+        bookingId: booking.id,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
   }
 

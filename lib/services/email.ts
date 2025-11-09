@@ -42,7 +42,7 @@ export class DevelopmentEmailService implements EmailService {
         return;
       }
 
-      this.transporter = nodemailer.createTransporter({
+      this.transporter = nodemailer.createTransport({
         host: smtpServer,
         port: smtpPort,
         secure: smtpPort === 465, // true for 465, false for other ports

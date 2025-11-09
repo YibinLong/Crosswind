@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Bell, Plus, Plane, Wind } from "lucide-react"
+import { Bell, Plus, Plane } from "lucide-react"
 import Link from "next/link"
 import {
   DropdownMenu,
@@ -20,10 +20,7 @@ export function DashboardHeader() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="relative">
-              <Plane className="h-8 w-8 text-blue-600" />
-              <Wind className="h-4 w-4 text-orange-500 absolute -top-1 -right-1 animate-pulse" />
-            </div>
+            <Plane className="h-8 w-8 text-blue-600" />
             <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
               Crosswind
             </span>

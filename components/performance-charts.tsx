@@ -3,26 +3,97 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Line, LineChart, Bar, BarChart, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { useEffect, useState } from "react"
+import { api } from "@/lib/api"
 
-const flightData = [
-  { month: "Jul", booked: 32, completed: 28, cancelled: 4 },
-  { month: "Aug", booked: 38, completed: 34, cancelled: 4 },
-  { month: "Sep", booked: 42, completed: 39, cancelled: 3 },
-  { month: "Oct", booked: 45, completed: 41, cancelled: 4 },
-  { month: "Nov", booked: 48, completed: 45, cancelled: 3 },
-  { month: "Dec", booked: 42, completed: 38, cancelled: 4 },
-]
+interface FlightActivityData {
+  month: string
+  booked: number
+  completed: number
+  cancelled: number
+}
 
-const weatherData = [
-  { week: "Week 1", conflicts: 4 },
-  { week: "Week 2", conflicts: 6 },
-  { week: "Week 3", conflicts: 3 },
-  { week: "Week 4", conflicts: 5 },
-  { week: "Week 5", conflicts: 7 },
-  { week: "Week 6", conflicts: 4 },
-]
+interface WeatherConflictData {
+  week: string
+  conflicts: number
+}
+
+interface PerformanceData {
+  flightActivity: FlightActivityData[]
+  weatherConflicts: WeatherConflictData[]
+}
 
 export function PerformanceCharts() {
+  const [data, setData] = useState<PerformanceData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchPerformanceData = async () => {
+      try {
+        const response = await api.analytics.getPerformance()
+        if (response.data.success) {
+          setData(response.data.data)
+        }
+      } catch (err) {
+        console.error('Error fetching performance data:', err)
+        setError('Failed to load performance data')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPerformanceData()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card className="bg-white border-blue-200 shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-slate-900">Flight Activity Trends</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px] animate-pulse">
+              <div className="h-full bg-gray-200 rounded"></div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white border-blue-200 shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-slate-900">Weather Conflicts Over Time</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px] animate-pulse">
+              <div className="h-full bg-gray-200 rounded"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card className="bg-white border-blue-200 shadow-lg">
+          <CardContent className="p-6 text-center">
+            <p className="text-red-600">{error}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-white border-blue-200 shadow-lg">
+          <CardContent className="p-6 text-center">
+            <p className="text-red-600">{error}</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (!data) {
+    return null
+  }
+
   return (
     <div className="grid lg:grid-cols-2 gap-6">
       {/* Flight Activity Chart */}
@@ -49,7 +120,7 @@ export function PerformanceCharts() {
             className="h-[300px]"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={flightData}>
+              <LineChart data={data.flightActivity}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" />
                 <XAxis dataKey="month" stroke="#475569" />
                 <YAxis stroke="#475569" />
@@ -86,7 +157,7 @@ export function PerformanceCharts() {
             className="h-[300px]"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weatherData}>
+              <BarChart data={data.weatherConflicts}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" />
                 <XAxis dataKey="week" stroke="#475569" />
                 <YAxis stroke="#475569" />

@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Cloud, Zap, Calendar, TrendingUp, ArrowRight, Plane, Wind, Clock } from "lucide-react"
+import { Cloud, Zap, Calendar, TrendingUp, ArrowRight, Plane, Clock } from "lucide-react"
 import Link from "next/link"
 
 export default function LandingPage() {
@@ -11,10 +11,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
-              <div className="relative">
-                <Plane className="h-8 w-8 text-blue-600" />
-                <Wind className="h-4 w-4 text-orange-500 absolute -top-1 -right-1 animate-pulse" />
-              </div>
+              <Plane className="h-8 w-8 text-blue-600" />
               <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
                 Crosswind
               </span>
@@ -74,15 +71,6 @@ export default function LandingPage() {
                 >
                   Start Free Trial
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
-              <Link href="#demo">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="text-lg px-8 h-14 border-blue-300 hover:bg-blue-50 bg-white shadow-md"
-                >
-                  Watch Demo
                 </Button>
               </Link>
             </div>
@@ -226,6 +214,148 @@ export default function LandingPage() {
               <h3 className="text-lg font-semibold text-slate-900 mb-2">Notify & Confirm</h3>
               <p className="text-slate-600 text-sm">Students and instructors choose the best option with one click</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">Simple, Transparent Pricing</h2>
+            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+              Choose the plan that fits your flight school's needs
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <Card className="p-8 bg-white border-slate-200 hover:border-blue-400 transition-all hover:shadow-xl">
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-bold text-slate-900 mb-2">Starter</h3>
+                <div className="text-4xl font-bold text-blue-600 mb-2">$99</div>
+                <div className="text-slate-600">per month</div>
+              </div>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-green-600"></div>
+                  </div>
+                  <span className="text-slate-700">Up to 10 students</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-green-600"></div>
+                  </div>
+                  <span className="text-slate-700">5 instructors</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-green-600"></div>
+                  </div>
+                  <span className="text-slate-700">Basic weather monitoring</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-green-600"></div>
+                  </div>
+                  <span className="text-slate-700">Email notifications</span>
+                </li>
+              </ul>
+              <Link href="/signup">
+                <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                  Get Started
+                </Button>
+              </Link>
+            </Card>
+
+            <Card className="p-8 bg-gradient-to-br from-blue-600 to-cyan-600 text-white border-2 border-blue-500 hover:border-blue-400 transition-all hover:shadow-xl relative">
+              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                <div className="bg-orange-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                  Most Popular
+                </div>
+              </div>
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-bold mb-2">Professional</h3>
+                <div className="text-4xl font-bold mb-2">$299</div>
+                <div className="text-blue-100">per month</div>
+              </div>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-white"></div>
+                  </div>
+                  <span>Up to 50 students</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-white"></div>
+                  </div>
+                  <span>Unlimited instructors</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-white"></div>
+                  </div>
+                  <span>Advanced AI rescheduling</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-white"></div>
+                  </div>
+                  <span>Priority support</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-white"></div>
+                  </div>
+                  <span>Analytics dashboard</span>
+                </li>
+              </ul>
+              <Link href="/signup">
+                <Button className="w-full bg-white text-blue-600 hover:bg-blue-50">
+                  Start Free Trial
+                </Button>
+              </Link>
+            </Card>
+
+            <Card className="p-8 bg-white border-slate-200 hover:border-blue-400 transition-all hover:shadow-xl">
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-bold text-slate-900 mb-2">Enterprise</h3>
+                <div className="text-4xl font-bold text-blue-600 mb-2">Custom</div>
+                <div className="text-slate-600">contact us</div>
+              </div>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-green-600"></div>
+                  </div>
+                  <span className="text-slate-700">Unlimited students</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-green-600"></div>
+                  </div>
+                  <span className="text-slate-700">Custom integrations</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-green-600"></div>
+                  </div>
+                  <span className="text-slate-700">Dedicated support</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-green-600"></div>
+                  </div>
+                  <span className="text-slate-700">SLA guarantee</span>
+                </li>
+              </ul>
+              <Link href="/signup">
+                <Button variant="outline" className="w-full border-blue-300 text-blue-700 hover:bg-blue-50">
+                  Contact Sales
+                </Button>
+              </Link>
+            </Card>
           </div>
         </div>
       </section>

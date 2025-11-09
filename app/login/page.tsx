@@ -6,18 +6,66 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Plane, Wind } from "lucide-react"
+import { Plane } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+import { api } from "@/lib/api"
+import { useAuth } from "@/lib/authContext"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+  const { login } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: Integrate with backend authentication
-    console.log("Login:", { email, password })
+
+    if (!email || !password) {
+      toast.error("Please fill in all fields")
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      const response = await api.auth.login(email, password)
+      const { user, token } = response.data
+
+      // Store token and user context
+      await login(token, user)
+
+      toast.success(`Welcome back, ${user.name}!`)
+
+      // Redirect to dashboard
+      router.push("/dashboard")
+
+    } catch (error: any) {
+      console.error("Login error:", error)
+
+      let errorMessage = "Login failed"
+
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message
+      } else if (error.response?.data?.details && Array.isArray(error.response.data.details)) {
+        errorMessage = error.response.data.details.map((d: any) => d.message).join(", ")
+      } else if (error.response?.status === 400) {
+        errorMessage = "Invalid email or password format"
+      } else if (error.response?.status === 401) {
+        errorMessage = "Invalid email or password"
+      } else if (error.response?.status === 500) {
+        errorMessage = "Server error. Please try again later."
+      }
+
+      toast.error(errorMessage)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -25,10 +73,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <Link href="/" className="flex items-center justify-center gap-2 mb-8">
-          <div className="relative">
-            <Plane className="h-10 w-10 text-blue-600" />
-            <Wind className="h-5 w-5 text-orange-500 absolute -top-1 -right-1 animate-pulse" />
-          </div>
+          <Plane className="h-10 w-10 text-blue-600" />
           <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
             Crosswind
           </span>
@@ -75,32 +120,14 @@ export default function LoginPage() {
               </div>
               <Button
                 type="submit"
-                className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg shadow-blue-200"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg shadow-blue-200 disabled:opacity-50"
               >
-                Sign In
+                {loading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
 
-            <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-blue-200" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-slate-500">Or continue with</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mt-6">
-                <Button variant="outline" className="bg-white border-blue-200 text-slate-700 hover:bg-blue-50">
-                  Google
-                </Button>
-                <Button variant="outline" className="bg-white border-blue-200 text-slate-700 hover:bg-blue-50">
-                  Microsoft
-                </Button>
-              </div>
-            </div>
-
+  
             <p className="text-center text-sm text-slate-600 mt-6">
               {"Don't have an account? "}
               <Link href="/signup" className="text-blue-600 hover:text-blue-700 font-semibold">

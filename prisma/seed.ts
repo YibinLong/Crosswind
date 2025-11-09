@@ -47,8 +47,7 @@ async function main() {
       data: {
         name: 'John Student',
         email: 'john@flightSchool.com',
-        phone: '+1-555-0101',
-        trainingLevel: 'private',
+                trainingLevel: 'private',
         userId: studentUser.id,
       },
     }),
@@ -56,16 +55,14 @@ async function main() {
       data: {
         name: 'Sarah Pilot',
         email: 'sarah@flightSchool.com',
-        phone: '+1-555-0102',
-        trainingLevel: 'instrument',
+                trainingLevel: 'instrument',
       },
     }),
     prisma.student.create({
       data: {
         name: 'Mike Aviator',
         email: 'mike@flightSchool.com',
-        phone: '+1-555-0103',
-        trainingLevel: 'commercial',
+                trainingLevel: 'commercial',
       },
     }),
   ]);
@@ -78,15 +75,13 @@ async function main() {
       data: {
         name: 'Captain Dave',
         email: 'dave@flightSchool.com',
-        phone: '+1-555-0201',
-      },
+              },
     }),
     prisma.instructor.create({
       data: {
         name: 'Instructor Lisa',
         email: 'lisa@flightSchool.com',
-        phone: '+1-555-0202',
-      },
+              },
     }),
   ]);
 

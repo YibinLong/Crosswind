@@ -1,3 +1,4 @@
+import 'server-only'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import { prisma } from './prisma'
@@ -83,26 +84,31 @@ export async function getUserById(id: number) {
 }
 
 /**
- * Create a new user with associated student profile
+ * Create a new user with associated student/instructor profile
  */
-export async function createUser(email: string, password: string, name: string) {
+export async function createUser(email: string, password: string, name: string, trainingLevel: string = 'PRIVATE', role: string = 'STUDENT') {
   const hashedPassword = await hashPassword(password)
 
-  const user = await prisma.user.create({
-    data: {
-      email,
-      password: hashedPassword,
-      name,
-      role: 'STUDENT',
-      student: {
-        create: {
-          name,
-          email,
-          phone: null,
-          trainingLevel: 'PRIVATE'
-        }
+  const userData: any = {
+    email,
+    password: hashedPassword,
+    name,
+    role
+  }
+
+  // Add student profile for students
+  if (role === 'STUDENT') {
+    userData.student = {
+      create: {
+        name,
+        email,
+        trainingLevel
       }
-    },
+    }
+  }
+
+  const user = await prisma.user.create({
+    data: userData,
     include: {
       student: true
     }

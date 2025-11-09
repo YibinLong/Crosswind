@@ -7,6 +7,8 @@
     "dev": "next dev",
     "lint": "eslint .",
     "start": "next start",
+    "dev:scheduler": "tsx scripts/scheduler.ts",
+    "start:scheduler": "tsx scripts/scheduler.ts",
     "db:seed": "tsx prisma/seed.ts",
     "test:email": "tsx lib/test/notifications.ts",
     "test:notifications": "tsx lib/test/notifications.ts"

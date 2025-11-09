@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Plane, Wind, Menu } from "lucide-react"
+import { Plane, Menu } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -14,10 +14,7 @@ export function Navigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2">
-            <div className="relative">
-              <Plane className="h-8 w-8 text-blue-600" />
-              <Wind className="h-4 w-4 text-orange-500 absolute -top-1 -right-1 animate-pulse" />
-            </div>
+            <Plane className="h-8 w-8 text-blue-600" />
             <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
               Crosswind
             </span>

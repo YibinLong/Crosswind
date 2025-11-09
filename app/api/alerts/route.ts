@@ -106,16 +106,14 @@ export const GET = withAuth(async (req: NextRequest) => {
               id: true,
               name: true,
               email: true,
-              trainingLevel: true,
-              phone: true
+              trainingLevel: true
             }
           },
           instructor: {
             select: {
               id: true,
               name: true,
-              email: true,
-              phone: true
+              email: true
             }
           },
           aircraft: {
@@ -215,7 +213,7 @@ export const GET = withAuth(async (req: NextRequest) => {
           {
             label: 'View Reschedule Options',
             action: 'view_reschedule',
-            url: `/dashboard/flights/${booking.id}/reschedule`
+            url: `/flights/${booking.id}/reschedule`
           },
           {
             label: 'Contact Instructor',
@@ -226,7 +224,7 @@ export const GET = withAuth(async (req: NextRequest) => {
           {
             label: 'View Details',
             action: 'view_details',
-            url: `/dashboard/flights/${booking.id}`
+            url: `/flights/${booking.id}`
           }
         ],
         timestamp: booking.scheduledDate.toISOString(),

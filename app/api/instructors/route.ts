@@ -7,7 +7,6 @@ import { prisma } from '@/lib/prisma'
 const createInstructorSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters long'),
   email: z.string().email('Invalid email address'),
-  phone: z.string().optional(),
   certifications: z.string().optional()
 })
 
@@ -107,7 +106,7 @@ export const POST = withAuth(async (req: NextRequest) => {
       )
     }
 
-    const { name, email, phone, certifications } = validation.data
+    const { name, email, certifications } = validation.data
 
     // Check if instructor with this email already exists
     const existingInstructor = await prisma.instructor.findUnique({
@@ -126,7 +125,6 @@ export const POST = withAuth(async (req: NextRequest) => {
       data: {
         name,
         email,
-        phone,
         certifications
       },
       include: {

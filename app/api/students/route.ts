@@ -7,7 +7,6 @@ import { prisma } from '@/lib/prisma'
 const createStudentSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters long'),
   email: z.string().email('Invalid email address'),
-  phone: z.string().optional(),
   trainingLevel: z.enum(['PRIVATE', 'INSTRUMENT', 'COMMERCIAL', 'ATP'], {
     errorMap: () => ({ message: 'Training level must be one of: PRIVATE, INSTRUMENT, COMMERCIAL, ATP' })
   })
@@ -100,7 +99,7 @@ export const POST = withAuth(async (req: NextRequest) => {
       )
     }
 
-    const { name, email, phone, trainingLevel } = validation.data
+    const { name, email, trainingLevel } = validation.data
 
     // Check if student with this email already exists
     const existingStudent = await prisma.student.findUnique({
@@ -120,7 +119,6 @@ export const POST = withAuth(async (req: NextRequest) => {
       data: {
         name,
         email,
-        phone,
         trainingLevel
       },
       include: {

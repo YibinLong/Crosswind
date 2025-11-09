@@ -7,23 +7,88 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plane, Wind } from "lucide-react"
+import { Plane } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+import { api } from "@/lib/api"
+import { useAuth } from "@/lib/authContext"
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    phone: "",
     password: "",
     trainingLevel: "",
   })
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+  const { login } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: Integrate with backend authentication
-    console.log("Signup:", formData)
+
+    // Validation
+    if (!formData.name || !formData.email || !formData.password || !formData.trainingLevel) {
+      toast.error("Please fill in all required fields")
+      return
+    }
+
+    if (formData.password.length < 6) {
+      toast.error("Password must be at least 6 characters long")
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      const response = await api.auth.signup(formData.email, formData.password, formData.name, formData.trainingLevel)
+      const { user, token, sampleData } = response.data
+
+      // Note: Student profile is already created in the signup API
+      // No need to create a separate student profile
+
+      // Store token and user context
+      await login(token, user)
+
+      // Show success message with sample data info
+      let successMessage = `Welcome to Crosswind, ${user.name}!`
+      if (sampleData && user.role === 'student') {
+        successMessage += ` We've created ${sampleData.totalFlights} sample flights and ${sampleData.conflictAlerts} weather alerts for you to explore.`
+      }
+      toast.success(successMessage)
+
+      // Redirect to dashboard
+      router.push("/dashboard")
+
+    } catch (error: any) {
+      console.error("Signup error:", error)
+      let errorMessage = "Failed to create account"
+
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error
+        // Add more specific error details for 409 errors
+        if (error.response.status === 409 && error.response.data.details) {
+          const details = error.response.data.details
+          if (details.suggestion) {
+            errorMessage += `. ${details.suggestion}`
+          }
+        }
+      } else if (error.response?.data?.details && Array.isArray(error.response.data.details)) {
+        errorMessage = error.response.data.details.map((d: any) => d.message).join(", ")
+      } else if (error.response?.status === 400) {
+        errorMessage = "Invalid input. Please check your form data."
+      } else if (error.response?.status === 409) {
+        errorMessage = "An account with this email already exists. Try signing in instead."
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message
+      }
+
+      toast.error(errorMessage)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -31,10 +96,7 @@ export default function SignupPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <Link href="/" className="flex items-center justify-center gap-2 mb-8">
-          <div className="relative">
-            <Plane className="h-10 w-10 text-blue-600" />
-            <Wind className="h-5 w-5 text-orange-500 absolute -top-1 -right-1 animate-pulse" />
-          </div>
+          <Plane className="h-10 w-10 text-blue-600" />
           <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
             Crosswind
           </span>
@@ -71,20 +133,6 @@ export default function SignupPage() {
                   placeholder="pilot@example.com"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                  className="bg-white border-blue-200 text-slate-900 placeholder:text-slate-400 focus:border-blue-500"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="text-slate-700">
-                  Phone
-                </Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="+1 (555) 000-0000"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   required
                   className="bg-white border-blue-200 text-slate-900 placeholder:text-slate-400 focus:border-blue-500"
                 />
@@ -134,32 +182,14 @@ export default function SignupPage() {
               </div>
               <Button
                 type="submit"
-                className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg shadow-blue-200"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg shadow-blue-200 disabled:opacity-50"
               >
-                Create Account
+                {loading ? "Creating Account..." : "Create Account"}
               </Button>
             </form>
 
-            <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-blue-200" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-slate-500">Or continue with</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mt-6">
-                <Button variant="outline" className="bg-white border-blue-200 text-slate-700 hover:bg-blue-50">
-                  Google
-                </Button>
-                <Button variant="outline" className="bg-white border-blue-200 text-slate-700 hover:bg-blue-50">
-                  Microsoft
-                </Button>
-              </div>
-            </div>
-
+    
             <p className="text-center text-sm text-slate-600 mt-6">
               Already have an account?{" "}
               <Link href="/login" className="text-blue-600 hover:text-blue-700 font-semibold">

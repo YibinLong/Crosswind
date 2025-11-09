@@ -3,6 +3,9 @@ import { z } from 'zod'
 import { withAuth } from '@/lib/middleware/auth'
 import { rescheduleService } from '@/lib/services/reschedule'
 import { prisma } from '@/lib/prisma'
+import { notificationService } from '@/lib/services/notification'
+import { generateRescheduleConfirmationEmail } from '@/lib/email-templates'
+import { logger } from '@/lib/logger'
 
 // Validation schema for confirming a reschedule suggestion
 const confirmSuggestionSchema = z.object({
@@ -113,8 +116,74 @@ export const POST = withAuth(async (req: NextRequest, { params }: { params: { id
       )
     }
 
-    // Send email notifications (if email service is configured)
-    // This would be implemented in a future phase
+    // Send email notifications to student and instructor
+    try {
+      const originalDate = new Date(booking.scheduledDate)
+      const newDate = new Date(suggestion.proposedDate)
+      const [hours, minutes] = suggestion.proposedTime.split(':').map(Number)
+      newDate.setHours(hours, minutes, 0, 0)
+
+      // Prepare recipients
+      const recipients = [
+        {
+          email: booking.student.email,
+          name: booking.student.name,
+        }
+      ]
+
+      // Add instructor if exists
+      if (booking.instructor) {
+        recipients.push({
+          email: booking.instructor.email,
+          name: booking.instructor.name,
+        })
+      }
+
+      // Generate email content
+      const emailTemplate = generateRescheduleConfirmationEmail({
+        student: booking.student,
+        booking: result.updatedBooking, // Use updated booking with new date
+        instructorName: booking.instructor?.name,
+        selectedSuggestion: suggestion,
+        originalDate: originalDate,
+        weatherForecast: suggestion.weatherSummary,
+      })
+
+      // Send notification
+      const notificationResult = await notificationService.sendNotification({
+        type: 'reschedule_confirmed',
+        recipients,
+        subject: emailTemplate.subject,
+        htmlContent: emailTemplate.htmlContent,
+        textContent: emailTemplate.textContent,
+        data: {
+          bookingId: booking.id,
+          suggestionId: suggestion.id,
+          originalDate: originalDate.toISOString(),
+          newDate: newDate.toISOString(),
+          confirmedBy: user.email,
+        },
+      })
+
+      if (notificationResult.success) {
+        logger.info('Reschedule confirmation notifications sent successfully', {
+          bookingId,
+          recipientCount: recipients.length,
+          messageId: notificationResult.messageId,
+        })
+      } else {
+        logger.error('Failed to send reschedule confirmation notifications', {
+          bookingId,
+          error: notificationResult.error,
+        })
+      }
+    } catch (emailError) {
+      logger.error('Error sending reschedule confirmation notifications', {
+        bookingId,
+        error: emailError instanceof Error ? emailError.message : 'Unknown error',
+      })
+      // Don't fail the entire request if email sending fails
+    }
 
     // Create comprehensive audit log entry
     await prisma.auditLog.create({

@@ -7,7 +7,6 @@ import { prisma } from '@/lib/prisma'
 const updateStudentSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters long').optional(),
   email: z.string().email('Invalid email address').optional(),
-  phone: z.string().optional(),
   trainingLevel: z.enum(['PRIVATE', 'INSTRUMENT', 'COMMERCIAL', 'ATP']).optional()
 })
 

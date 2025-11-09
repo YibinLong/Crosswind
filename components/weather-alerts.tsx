@@ -1,9 +1,13 @@
+"use client"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { AlertTriangle, Cloud, Wind, CloudRain, RefreshCw, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
+import { api } from "@/lib/api"
+import { RescheduleDialog } from "./reschedule-dialog"
 
 interface Alert {
   id: number
@@ -21,7 +25,7 @@ interface Alert {
       name: string
       email: string
     }
-    aircraft: {
+    aircraft?: {
       tailNumber: string
       model: string
     }
@@ -77,6 +81,8 @@ export function WeatherAlerts() {
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [summary, setSummary] = useState<AlertsResponse['summary'] | null>(null)
+  const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false)
+  const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null)
 
   const fetchAlerts = async (isRefresh = false) => {
     try {
@@ -87,23 +93,26 @@ export function WeatherAlerts() {
       }
       setError(null)
 
-      const response = await fetch('/api/alerts?status=conflict&limit=10')
+      const response = await api.alerts.getAll({
+        status: 'conflict',
+        limit: 10
+      })
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch alerts')
-      }
-
-      const data: AlertsResponse = await response.json()
-
-      if (data.success) {
-        setAlerts(data.alerts)
-        setSummary(data.summary)
+      // The API client returns the response data directly
+      if (response.data.success) {
+        setAlerts(response.data.alerts)
+        setSummary(response.data.summary)
       } else {
         throw new Error('Invalid response format')
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching alerts:', err)
-      setError(err instanceof Error ? err.message : 'Unknown error')
+      // Handle authentication errors specifically
+      if (err.response?.status === 401) {
+        setError('Authentication required. Please log in again.')
+      } else {
+        setError(err.response?.data?.error || err.message || 'Unknown error')
+      }
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -123,6 +132,31 @@ export function WeatherAlerts() {
 
   const handleRefresh = () => {
     fetchAlerts(true)
+  }
+
+  const handleReschedule = (alert: Alert) => {
+    setSelectedAlert(alert)
+    setRescheduleDialogOpen(true)
+  }
+
+  const handleRescheduleSuccess = () => {
+    setRescheduleDialogOpen(false)
+    setSelectedAlert(null)
+    fetchAlerts() // Refresh the alerts list
+  }
+
+  // Convert Alert to Booking for RescheduleDialog
+  const alertToBooking = (alert: Alert) => {
+    return {
+      id: alert.flight.id,
+      studentId: alert.flight.student.id,
+      scheduledDate: alert.flight.scheduledDate,
+      student: alert.flight.student,
+      instructor: alert.flight.instructor,
+      aircraft: alert.flight.aircraft,
+      status: alert.flight.status,
+      weatherReports: alert.weather ? [alert.weather] : []
+    }
   }
 
   const formatScheduledTime = (dateString: string) => {
@@ -147,7 +181,12 @@ export function WeatherAlerts() {
     }
   }
 
-  const handleAction = (action: { url: string }) => {
+  const handleAction = (action: { url: string } | undefined) => {
+    if (!action || !action.url) {
+      console.warn('Action or action.url is undefined')
+      return
+    }
+
     if (action.url.startsWith('mailto:')) {
       window.location.href = action.url
     } else {
@@ -245,6 +284,7 @@ export function WeatherAlerts() {
   }
 
   return (
+    <>
     <Card className="bg-white border-blue-200 shadow-lg">
       <CardHeader>
         <div className="flex items-center justify-between">
@@ -268,15 +308,7 @@ export function WeatherAlerts() {
               <RefreshCw className={`h-3 w-3 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-blue-300 text-slate-700 hover:bg-blue-50 bg-transparent"
-              onClick={() => window.location.href = '/dashboard/flights'}
-            >
-              View All
-            </Button>
-          </div>
+            </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -310,7 +342,12 @@ export function WeatherAlerts() {
                       </div>
                       <div>
                         <span className="text-slate-500">Aircraft:</span>
-                        <span className="ml-2 font-medium text-slate-900">{alert.flight.aircraft.tailNumber} ({alert.flight.aircraft.model})</span>
+                        <span className="ml-2 font-medium text-slate-900">
+                          {alert.flight.aircraft
+                            ? `${alert.flight.aircraft.tailNumber} (${alert.flight.aircraft.model})`
+                            : 'Unassigned'
+                          }
+                        </span>
                       </div>
                       <div>
                         <span className="text-slate-500">Level:</span>
@@ -343,7 +380,7 @@ export function WeatherAlerts() {
                       {alert.reschedule?.availableOptions ? (
                         <Button
                           size="sm"
-                          onClick={() => handleAction(alert.actions.find(a => a.action === 'view_reschedule')!)}
+                          onClick={() => handleReschedule(alert)}
                           className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-lg shadow-blue-200"
                         >
                           AI Reschedule ({alert.reschedule.availableOptions} options)
@@ -351,25 +388,17 @@ export function WeatherAlerts() {
                       ) : (
                         <Button
                           size="sm"
-                          onClick={() => handleAction(alert.actions.find(a => a.action === 'view_reschedule')!)}
+                          onClick={() => handleReschedule(alert)}
                           className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-lg shadow-blue-200"
                         >
                           AI Reschedule
                         </Button>
                       )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleAction(alert.actions.find(a => a.action === 'view_details')!)}
-                        className="border-blue-300 text-slate-700 hover:bg-blue-50 bg-transparent"
-                      >
-                        View Details
-                      </Button>
                       {alert.flight.instructor && (
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleAction(alert.actions.find(a => a.action === 'contact_instructor')!)}
+                          onClick={() => handleAction(alert.actions.find(a => a.action === 'contact_instructor'))}
                           className="text-slate-600 hover:bg-slate-100"
                         >
                           Contact Instructor
@@ -393,15 +422,23 @@ export function WeatherAlerts() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => window.location.href = '/dashboard/flights?filter=pending_reschedule'}
+                onClick={() => window.location.href = '/flights?filter=pending_reschedule'}
                 className="border-blue-300 text-blue-700 hover:bg-blue-50"
               >
-                View All Options
+                View AI Options
               </Button>
             </div>
           </div>
         )}
       </CardContent>
     </Card>
-  )
+
+    <RescheduleDialog
+      open={rescheduleDialogOpen}
+      onOpenChange={setRescheduleDialogOpen}
+      flight={selectedAlert ? alertToBooking(selectedAlert) : null}
+      onSuccess={handleRescheduleSuccess}
+    />
+  </>
+)
 }

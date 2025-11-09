@@ -39,7 +39,13 @@
       "Bash(done:*)",
       "Bash(openssl:*)",
       "Bash(pkill:*)",
-      "Bash(npx next dev:*)"
+      "Bash(npx next dev:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx typescript --version)",
+      "Bash(npm run build:*)",
+      "Bash(pg_isready:*)",
+      "Bash(BashOutput 240ab8)",
+      "Bash(npx prisma db seed:*)"
     ],
     "deny": [],
     "ask": []

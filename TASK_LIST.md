@@ -355,78 +355,78 @@
 
 ---
 
-## **PHASE 6: FRONTEND-BACKEND INTEGRATION** ⬜
+## **PHASE 6: FRONTEND-BACKEND INTEGRATION** ✅
 
-### **Epic 6.1: Connect Dashboard Components to Backend** ⬜
+### **Epic 6.1: Connect Dashboard Components to Backend** ✅
 
 **Story:** Replace all mock data in frontend components with real API data
 
-- ⬜ **Task 6.1.1:** Connect QuickStats component
+- ✅ **Task 6.1.1:** Connect QuickStats component
   - Update `components/quick-stats.tsx`
   - Create API route `app/api/dashboard/stats/route.ts`
   - Fetch: total flights, active conflicts, resolved count, avg reschedule time
   - Display real data in QuickStats
 
-- ⬜ **Task 6.1.2:** Connect UpcomingFlights component
+- ✅ **Task 6.1.2:** Connect UpcomingFlights component
   - Update `components/upcoming-flights.tsx`
   - Fetch bookings from `/api/bookings?status=confirmed&upcoming=true`
   - Display real flight data
   - Add loading skeleton
 
-- ⬜ **Task 6.1.3:** Connect RecentActivity component
+- ✅ **Task 6.1.3:** Connect RecentActivity component
   - Update `components/recent-activity.tsx`
   - Create API route `app/api/activity/route.ts` to fetch recent audit logs
   - Display real activity feed
 
-- ⬜ **Task 6.1.4:** Connect FlightsList component
+- ✅ **Task 6.1.4:** Connect FlightsList component
   - Update `components/flights-list.tsx`
   - Fetch all bookings from `/api/bookings`
   - Implement search and filter functionality
   - Connect "View Details" and "Reschedule" buttons to real data
 
-- ⬜ **Task 6.1.5:** Connect BookFlightDialog to API
+- ✅ **Task 6.1.5:** Connect BookFlightDialog to API
   - Update `components/book-flight-dialog.tsx`
   - Fetch real students, instructors, aircraft from APIs
   - On submit, POST to `/api/bookings`
   - Show success/error toast
   - Refresh flights list after successful booking
 
-- ⬜ **Task 6.1.6:** Connect RescheduleDialog to AI API
+- ✅ **Task 6.1.6:** Connect RescheduleDialog to AI API
   - Update `components/reschedule-dialog.tsx`
   - On dialog open, POST to `/api/bookings/[id]/reschedule` to generate AI suggestions
   - Display loading state while AI generates options
   - On confirm, POST to `/api/bookings/[id]/reschedule/confirm`
   - Show success toast and refresh data
 
-**Acceptance:** All dashboard components display real data from the backend
+**Acceptance:** All dashboard components display real data from the backend ✅
 
 ---
 
-### **Epic 6.2: Connect Analytics Page** ⬜
+### **Epic 6.2: Connect Analytics Page** ✅
 
 **Story:** Build analytics data endpoints and connect to charts
 
-- ⬜ **Task 6.2.1:** Create analytics API routes
+- ✅ **Task 6.2.1:** Create analytics API routes
   - Create `app/api/analytics/overview/route.ts` for high-level metrics
   - Create `app/api/analytics/performance/route.ts` for performance chart data
   - Create `app/api/analytics/weather-impact/route.ts` for weather impact data
 
-- ⬜ **Task 6.2.2:** Connect AnalyticsOverview component
+- ✅ **Task 6.2.2:** Connect AnalyticsOverview component
   - Update `components/analytics-overview.tsx`
   - Fetch real metrics from API
   - Display with loading states
 
-- ⬜ **Task 6.2.3:** Connect PerformanceCharts component
+- ✅ **Task 6.2.3:** Connect PerformanceCharts component
   - Update `components/performance-charts.tsx`
   - Fetch chart data from API
   - Populate recharts with real data
 
-- ⬜ **Task 6.2.4:** Connect WeatherImpactAnalysis component
+- ✅ **Task 6.2.4:** Connect WeatherImpactAnalysis component
   - Update `components/weather-impact-analysis.tsx`
   - Fetch weather impact data from API
   - Display real analysis
 
-**Acceptance:** Analytics page displays real metrics and charts from the database
+**Acceptance:** Analytics page displays real metrics and charts from the database ✅
 
 ---
 

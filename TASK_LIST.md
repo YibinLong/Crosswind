@@ -73,31 +73,32 @@
 
 ---
 
-## **PHASE 2: BACKEND API ROUTES & SERVER ACTIONS** ⬜
+## **PHASE 2: BACKEND API ROUTES & SERVER ACTIONS** ✅
 
-### **Epic 2.1: Authentication System** ⬜
+### **Epic 2.1: Authentication System** ✅
 
 **Story:** Implement user authentication for login and signup
 
-- ⬜ **Task 2.1.1:** Create user authentication utilities
+- ✅ **Task 2.1.1:** Create user authentication utilities
   - Create `lib/auth.ts` with password hashing (bcrypt) and JWT token generation/verification
-  - Create `lib/session.ts` for session management
+  - Create `lib/prisma.ts` for database client initialization
 
-- ⬜ **Task 2.1.2:** Create API route for user signup
+- ✅ **Task 2.1.2:** Create API route for user signup
   - Create `app/api/auth/signup/route.ts`
   - Validate email/password with Zod
-  - Hash password with bcrypt
-  - Create user in database (extend Student or create separate User model)
+  - Hash password with bcrypt (12 salt rounds)
+  - Create user in database with Student record
   - Return JWT token
 
-- ⬜ **Task 2.1.3:** Create API route for user login
+- ✅ **Task 2.1.3:** Create API route for user login
   - Create `app/api/auth/login/route.ts`
   - Validate credentials
   - Compare hashed passwords
   - Return JWT token on success
 
-- ⬜ **Task 2.1.4:** Create authentication middleware
+- ✅ **Task 2.1.4:** Create authentication middleware
   - Create `lib/middleware/auth.ts` to verify JWT tokens
+  - Include role-based access control
   - Protect authenticated routes
 
 - ⬜ **Task 2.1.5:** Connect login/signup pages to authentication API
@@ -110,56 +111,62 @@
 
 ---
 
-### **Epic 2.2: Flight Booking CRUD Operations** ⬜
+### **Epic 2.2: Flight Booking CRUD Operations** ✅
 
 **Story:** Create API endpoints for managing flight bookings
 
-- ⬜ **Task 2.2.1:** Create API route to fetch all bookings
+- ✅ **Task 2.2.1:** Create API route to fetch all bookings
   - Create `app/api/bookings/route.ts` (GET method)
   - Return all bookings with related student, instructor, aircraft data
-  - Add optional query filters (status, date range, student)
+  - Add optional query filters (status, date range, student, upcoming)
+  - Include pagination support
 
-- ⬜ **Task 2.2.2:** Create API route to create a new booking
+- ✅ **Task 2.2.2:** Create API route to create a new booking
   - Create `app/api/bookings/route.ts` (POST method)
   - Validate booking data with Zod schema
-  - Check for scheduling conflicts
-  - Create booking in database
-  - Return created booking
+  - Check for scheduling conflicts (2-hour buffer)
+  - Create booking in database with audit log
+  - Return created booking with relations
 
-- ⬜ **Task 2.2.3:** Create API route to get a single booking by ID
+- ✅ **Task 2.2.3:** Create API route to get a single booking by ID
   - Create `app/api/bookings/[id]/route.ts` (GET method)
-  - Include related data (student, instructor, aircraft, weather reports, reschedule suggestions)
+  - Include related data (student, instructor, aircraft, weather reports, reschedule suggestions, audit logs)
 
-- ⬜ **Task 2.2.4:** Create API route to update a booking
+- ✅ **Task 2.2.4:** Create API route to update a booking
   - Create `app/api/bookings/[id]/route.ts` (PATCH method)
   - Validate update data
   - Update booking status or details
+  - Check for conflicts when updating schedule
   - Log action in AuditLog
 
-- ⬜ **Task 2.2.5:** Create API route to cancel/delete a booking
+- ✅ **Task 2.2.5:** Create API route to cancel/delete a booking
   - Create `app/api/bookings/[id]/route.ts` (DELETE method)
-  - Soft delete or update status to "cancelled"
+  - Soft delete by updating status to "cancelled"
   - Log cancellation in AuditLog
+  - Prevent deletion of bookings with active status
 
 **Acceptance:** Full CRUD operations for bookings work via API routes
 
 ---
 
-### **Epic 2.3: Students, Instructors, and Aircraft APIs** ⬜
+### **Epic 2.3: Students, Instructors, and Aircraft APIs** ✅
 
 **Story:** Create API endpoints for managing students, instructors, and aircraft
 
-- ⬜ **Task 2.3.1:** Create API routes for students
-  - Create `app/api/students/route.ts` (GET all, POST create)
-  - Create `app/api/students/[id]/route.ts` (GET one, PATCH update, DELETE delete)
+- ✅ **Task 2.3.1:** Create API routes for students
+  - Create `app/api/students/route.ts` (GET all with search/filters, POST create)
+  - Create `app/api/students/[id]/route.ts` (GET one with bookings, PATCH update, DELETE with safety checks)
+  - Include training level filtering and booking counts
 
-- ⬜ **Task 2.3.2:** Create API routes for instructors
-  - Create `app/api/instructors/route.ts` (GET all, POST create)
-  - Create `app/api/instructors/[id]/route.ts` (GET one, PATCH update, DELETE delete)
+- ✅ **Task 2.3.2:** Create API routes for instructors
+  - Create `app/api/instructors/route.ts` (GET all with search/availability, POST create)
+  - Create `app/api/instructors/[id]/route.ts` (GET one with bookings, PATCH update, DELETE with safety checks)
+  - Include availability filtering and booking counts
 
-- ⬜ **Task 2.3.3:** Create API routes for aircraft
-  - Create `app/api/aircraft/route.ts` (GET all, POST create)
-  - Create `app/api/aircraft/[id]/route.ts` (GET one, PATCH update, DELETE delete)
+- ✅ **Task 2.3.3:** Create API routes for aircraft
+  - Create `app/api/aircraft/route.ts` (GET all with search/availability, POST create)
+  - Create `app/api/aircraft/[id]/route.ts` (GET one with bookings, PATCH update, DELETE with safety checks)
+  - Include status filtering and booking conflict prevention
 
 **Acceptance:** API endpoints for students, instructors, and aircraft are functional
 

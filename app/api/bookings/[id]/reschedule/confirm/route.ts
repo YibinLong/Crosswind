@@ -14,9 +14,10 @@ const confirmSuggestionSchema = z.object({
 })
 
 // POST /api/bookings/[id]/reschedule/confirm - Confirm and execute a reschedule suggestion
-export const POST = withAuth(async (req: NextRequest, { params }: { params: { id: string } }) => {
+export const POST = withAuth(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
-    const bookingId = parseInt(params.id)
+    const { id } = await params
+    const bookingId = parseInt(id)
 
     if (isNaN(bookingId)) {
       return NextResponse.json(
@@ -221,9 +222,10 @@ export const POST = withAuth(async (req: NextRequest, { params }: { params: { id
 })
 
 // GET /api/bookings/[id]/reschedule/confirm - Get details for a specific suggestion before confirmation
-export const GET = withAuth(async (req: NextRequest, { params }: { params: { id: string } }) => {
+export const GET = withAuth(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
-    const bookingId = parseInt(params.id)
+    const { id } = await params
+    const bookingId = parseInt(id)
     const { searchParams } = new URL(req.url)
     const suggestionId = searchParams.get('suggestionId')
 

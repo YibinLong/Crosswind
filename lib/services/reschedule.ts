@@ -61,12 +61,12 @@ export class RescheduleService {
       // Generate AI suggestions
       const suggestions = await openAIService.generateRescheduleSuggestions(context);
 
-      // Save suggestions to database
-      await this.saveSuggestionsToDatabase(request.bookingId, suggestions);
+      // Save suggestions to database and get the saved suggestions with IDs
+      const savedSuggestions = await this.saveSuggestionsToDatabase(request.bookingId, suggestions);
 
       return {
         success: true,
-        suggestions,
+        suggestions: savedSuggestions, // Return saved suggestions with database IDs
         bookingId: request.bookingId
       };
     } catch (error) {
@@ -348,7 +348,7 @@ export class RescheduleService {
    */
   private async saveSuggestionsToDatabase(bookingId: number, suggestions: AIRescheduleSuggestion[]) {
     const savedSuggestions = await Promise.all(
-      suggestions.map(suggestion =>
+      suggestions.map((suggestion, index) =>
         prisma.rescheduleSuggestion.create({
           data: {
             bookingId,
@@ -363,6 +363,20 @@ export class RescheduleService {
       )
     );
 
+    // Merge AI suggestion data with database results to preserve all fields
+    const mergedSuggestions = savedSuggestions.map((savedSuggestion, index) => ({
+      ...savedSuggestion, // Database record with id, createdAt, updatedAt
+      ...suggestions[index], // Original AI suggestion data (advantages, considerations, etc.)
+      // Ensure critical fields aren't overridden
+      id: savedSuggestion.id,
+      proposedDate: savedSuggestion.proposedDate,
+      proposedTime: savedSuggestion.proposedTime,
+      confidence: savedSuggestion.confidence,
+      reason: savedSuggestion.reason,
+      weatherSummary: savedSuggestion.weatherSummary,
+      selected: savedSuggestion.selected
+    }));
+
     // Create audit log entry
     await prisma.auditLog.create({
       data: {
@@ -373,7 +387,7 @@ export class RescheduleService {
       }
     });
 
-    return savedSuggestions;
+    return mergedSuggestions;
   }
 
   /**

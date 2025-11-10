@@ -29,6 +29,20 @@ axiosInstance.interceptors.response.use(
     return response
   },
   (error) => {
+    // Enhanced debugging for 405 errors
+    if (error.response?.status === 405) {
+      console.error('🚨 [API 405 ERROR] Method not allowed')
+      console.error('📄 URL:', error.config?.url)
+      console.error('🔧 Method:', error.config?.method?.toUpperCase())
+      console.error('🔍 Request config:', {
+        url: error.config?.url,
+        method: error.config?.method,
+        headers: error.config?.headers,
+        data: error.config?.data
+      })
+      console.error('📋 Response:', error.response.data)
+    }
+
     // Handle auth errors
     if (error.response?.status === 401) {
       // Token expired or invalid

@@ -9,6 +9,8 @@ import { useEffect, useState } from "react"
 import { api, Booking } from "@/lib/api"
 import { format } from "date-fns"
 import { RescheduleDialog } from "./reschedule-dialog"
+import { formatShortRoute } from "@/lib/utils"
+import { REFRESH_INTERVALS } from "@/lib/config"
 
 export function UpcomingFlights() {
   const [flights, setFlights] = useState<Booking[]>([])
@@ -20,8 +22,8 @@ export function UpcomingFlights() {
   useEffect(() => {
     fetchFlights()
 
-    // Refresh every 2 minutes
-    const interval = setInterval(fetchFlights, 2 * 60 * 1000)
+    // Refresh periodically
+    const interval = setInterval(fetchFlights, REFRESH_INTERVALS.FLIGHTS_DATA)
 
     return () => clearInterval(interval)
   }, [])
@@ -200,7 +202,9 @@ export function UpcomingFlights() {
                   </div>
                   <div className="flex items-center gap-2 text-slate-700">
                     <MapPin className="h-4 w-4 text-slate-500" />
-                    Route
+                    <span className="text-sm">
+                      {formatShortRoute(flight.departureLat, flight.departureLon, flight.arrivalLat, flight.arrivalLon)}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 text-slate-700">
                     <User className="h-4 w-4 text-slate-500" />

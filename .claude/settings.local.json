@@ -45,7 +45,9 @@
       "Bash(npm run build:*)",
       "Bash(pg_isready:*)",
       "Bash(BashOutput 240ab8)",
-      "Bash(npx prisma db seed:*)"
+      "Bash(npx prisma db seed:*)",
+      "Bash(echo:*)",
+      "Bash(claude mcp add:*)"
     ],
     "deny": [],
     "ask": []

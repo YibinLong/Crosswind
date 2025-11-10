@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Plane, Calendar, AlertTriangle, TrendingUp } from "lucide-react"
 import { useEffect, useState } from "react"
 import { api, DashboardStats } from "@/lib/api"
+import { REFRESH_INTERVALS } from "@/lib/config"
 
 interface StatConfig {
   label: string
@@ -22,8 +23,8 @@ export function QuickStats() {
   useEffect(() => {
     fetchStats()
 
-    // Refresh stats every 5 minutes
-    const interval = setInterval(fetchStats, 5 * 60 * 1000)
+    // Refresh stats periodically
+    const interval = setInterval(fetchStats, REFRESH_INTERVALS.DASHBOARD_STATS)
 
     return () => clearInterval(interval)
   }, [])

@@ -1,10 +1,42 @@
-// Type definitions for backend integration
-export interface Student {
-  id: string
+// Comprehensive type definitions for the Crosswind application
+
+// Base entity types
+export interface BaseEntity {
+  id: number
+  createdAt: string
+  updatedAt: string
+}
+
+// User and authentication types
+export interface User extends BaseEntity {
+  email: string
+  name: string
+  role: UserRole
+  avatar?: string
+}
+
+export type UserRole = 'student' | 'instructor' | 'admin' | 'flight_school'
+
+export interface AuthState {
+  user: User | null
+  token: string | null
+  loading: boolean
+  error: string | null
+}
+
+// Student types (maintaining backward compatibility)
+export interface Student extends BaseEntity {
   name: string
   email: string
-  trainingLevel: "student-pilot" | "private-pilot" | "instrument-rated" | "commercial-pilot" | "instructor"
+  trainingLevel: TrainingLevel
+  userId?: number
+  user?: User
+  _count?: {
+    bookings: number
+  }
 }
+
+export type TrainingLevel = 'student-pilot' | 'private-pilot' | 'instrument-rated' | 'commercial-pilot' | 'instructor' | 'student' | 'private' | 'instrument' | 'commercial' | 'airline_transport'
 
 export interface FlightBooking {
   id: string
@@ -71,3 +103,213 @@ export const WEATHER_MINIMUMS = {
     crosswind: 15,
   },
 } as const
+
+// Additional comprehensive types
+export interface Instructor extends BaseEntity {
+  name: string
+  email: string
+  userId?: number
+  user?: User
+  _count?: {
+    bookings: number
+  }
+}
+
+export interface Aircraft extends BaseEntity {
+  tailNumber: string
+  model: string
+  status: AircraftStatus
+  _count?: {
+    bookings: number
+  }
+}
+
+export type AircraftStatus = 'available' | 'in-use' | 'maintenance' | 'unavailable'
+
+// Enhanced booking types
+export interface Booking extends BaseEntity {
+  studentId: number
+  instructorId: number
+  aircraftId: number
+  scheduledDate: string
+  departureLat: number
+  departureLon: number
+  arrivalLat: number
+  arrivalLon: number
+  status: FlightStatus
+  student?: Student
+  instructor?: Instructor
+  aircraft?: Aircraft
+  weatherReports?: WeatherReport[]
+  rescheduleSuggestions?: RescheduleSuggestion[]
+}
+
+export type FlightStatus = 'scheduled' | 'confirmed' | 'conflict' | 'cancelled' | 'completed'
+
+// Weather report types
+export interface WeatherReport extends BaseEntity {
+  bookingId: number
+  location: 'departure' | 'arrival'
+  windKts: number
+  windGustKts?: number
+  visibility: number
+  ceilingFt: number
+  condition: string
+  temperature: number
+  isSafe: boolean
+  violatedMinimums: WeatherMinimum[]
+}
+
+export type WeatherMinimum = 'wind_speed' | 'wind_gusts' | 'visibility' | 'ceiling' | 'clouds' | 'precipitation'
+
+// Rescheduling types
+export interface RescheduleSuggestion extends BaseEntity {
+  bookingId: number
+  proposedDate: string
+  proposedTime: string
+  weatherSummary: string
+  confidence: number
+  reason: string
+  selected: boolean
+}
+
+export interface RescheduleRequest {
+  reason: string
+  newDate?: string
+  newTime?: string
+  suggestionId?: number
+}
+
+// Enhanced alert types
+export interface WeatherAlert extends BaseEntity {
+  bookingId: number
+  student: {
+    name: string
+    trainingLevel: string
+  }
+  weatherReport: {
+    windKts: number
+    windGustKts?: number
+    visibility: number
+    ceilingFt: number
+    condition: string
+    temperature: number
+    isSafe: boolean
+    violatedMinimums: WeatherMinimum[]
+  }
+  type: AlertType
+  severity: AlertSeverity
+  actions?: AlertAction[]
+}
+
+export type AlertType = 'weather_conflict' | 'reminder' | 'booking_confirmed' | 'booking_cancelled'
+export type AlertSeverity = 'high' | 'medium' | 'low'
+
+export interface AlertAction {
+  label: string
+  action: string
+  url: string
+}
+
+// Dashboard and analytics types
+export interface DashboardStats {
+  todayFlights: number
+  weeklyScheduled: number
+  activeConflicts: number
+  completionRate: number
+  totalStudents: number
+  totalInstructors: number
+  totalAircraft: number
+}
+
+export interface AnalyticsOverview {
+  totalFlights: number
+  weatherConflicts: number
+  successfulReschedules: number
+  avgRescheduleTime: number
+  trends: {
+    totalFlightsChange: string
+    conflictsChange: string
+    rescheduleTimeChange: string
+  }
+  successRate: string
+}
+
+// API response types
+export interface ApiResponse<T = any> {
+  success: boolean
+  data: T
+  message?: string
+  error?: string
+}
+
+export interface PaginatedResponse<T> {
+  data: T[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    pages: number
+  }
+}
+
+export interface BookingsResponse {
+  bookings?: Booking[]
+  data?: Booking[]
+  pagination?: {
+    page: number
+    limit: number
+    total: number
+    pages: number
+  }
+}
+
+// Form types
+export interface CreateBookingForm {
+  studentId: string
+  instructorId: string
+  aircraftId: string
+  date: string
+  time: string
+  departureLat: number
+  departureLon: number
+  arrivalLat: number
+  arrivalLon: number
+}
+
+export interface LoginForm {
+  email: string
+  password: string
+}
+
+export interface SignupForm {
+  name: string
+  email: string
+  password: string
+  confirmPassword: string
+  role?: UserRole
+  trainingLevel?: TrainingLevel
+}
+
+// Error types
+export interface ApiError {
+  message: string
+  code?: number
+  details?: any
+  source: string
+}
+
+export interface ValidationError {
+  field: string
+  message: string
+  code: string
+}
+
+// UI state types
+export type LoadingState = 'idle' | 'loading' | 'success' | 'error'
+
+export interface AsyncState<T> {
+  data: T | null
+  loading: boolean
+  error: string | null
+}

@@ -12,6 +12,8 @@ import { BookFlightDialog } from "@/components/book-flight-dialog"
 import { RescheduleDialog } from "@/components/reschedule-dialog"
 import { api, Booking } from "@/lib/api"
 import { format } from "date-fns"
+import { formatShortRoute } from "@/lib/utils"
+import { REFRESH_INTERVALS, PAGINATION } from "@/lib/config"
 
 export function FlightsList() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -25,6 +27,7 @@ export function FlightsList() {
   const [refreshing, setRefreshing] = useState(false)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
 
   useEffect(() => {
     fetchFlights()
@@ -37,7 +40,7 @@ export function FlightsList() {
 
       const params: any = {
         page,
-        limit: 20
+        limit: PAGINATION.DEFAULT_LIMIT
       }
 
       if (searchQuery) {
@@ -49,12 +52,40 @@ export function FlightsList() {
       }
 
       const response = await api.bookings.getAll(params)
-      setFlights(response.data.bookings || response.data) // Handle both paginated and direct array responses
+      const responseData = response.data
+
+      // Handle both paginated and direct array responses
+      let flights: Booking[] = []
+      if (Array.isArray(responseData)) {
+        flights = responseData
+      } else if (responseData.bookings) {
+        flights = responseData.bookings
+      } else if (responseData.data) {
+        flights = responseData.data
+      } else {
+        flights = []
+      }
+
+      // Sort flights chronologically (earliest first) to ensure correct order
+      flights = flights.sort((a, b) => {
+        const dateA = new Date(a.scheduledDate)
+        const dateB = new Date(b.scheduledDate)
+        return dateA.getTime() - dateB.getTime()
+      })
+
+      setFlights(flights)
 
       // Calculate total pages if pagination info is available
-      if (response.headers?.['x-total-count']) {
-        const totalCount = parseInt(response.headers['x-total-count'])
-        setTotalPages(Math.ceil(totalCount / 20))
+      if (responseData.pagination) {
+        setTotalPages(responseData.pagination.pages)
+        setTotalCount(responseData.pagination.total)
+      } else if (response.headers?.['x-total-count']) {
+        const headerTotalCount = parseInt(response.headers['x-total-count'])
+        setTotalPages(Math.ceil(headerTotalCount / 20))
+        setTotalCount(headerTotalCount)
+      } else if (Array.isArray(responseData)) {
+        setTotalPages(Math.ceil(responseData.length / 20))
+        setTotalCount(responseData.length)
       }
 
     } catch (err: any) {
@@ -342,7 +373,9 @@ export function FlightsList() {
                       <MapPin className="h-4 w-4 text-slate-500" />
                       <div>
                         <p className="text-xs text-slate-500">Route</p>
-                        <p className="text-sm text-slate-700">Departure → Arrival</p>
+                        <p className="text-sm text-slate-700">
+                          {formatShortRoute(flight.departureLat, flight.departureLon, flight.arrivalLat, flight.arrivalLon)}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -379,6 +412,7 @@ export function FlightsList() {
                           size="sm"
                           className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-lg shadow-blue-200"
                           onClick={() => handleReschedule(flight)}
+                          data-testid={`reschedule-button-${flight.id}`}
                         >
                           AI Reschedule
                         </Button>
@@ -389,6 +423,7 @@ export function FlightsList() {
                           variant="outline"
                           className="border-blue-300 text-slate-700 hover:bg-blue-50 bg-transparent"
                           onClick={() => handleReschedule(flight)}
+                          data-testid={`reschedule-button-${flight.id}`}
                         >
                           Reschedule
                         </Button>
@@ -402,7 +437,7 @@ export function FlightsList() {
               {totalPages > 1 && (
                 <div className="flex items-center justify-between pt-4 border-t border-slate-200">
                   <p className="text-sm text-slate-600">
-                    Showing {flights.length} of {totalPages * 20} flights
+                    Showing {flights.length} of {totalCount || totalPages * 20} flights
                   </p>
                   <div className="flex items-center gap-2">
                     <Button

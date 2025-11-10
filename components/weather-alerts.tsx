@@ -8,6 +8,7 @@ import { AlertTriangle, Cloud, Wind, CloudRain, RefreshCw, Loader2 } from "lucid
 import { useEffect, useState } from "react"
 import { api } from "@/lib/api"
 import { RescheduleDialog } from "./reschedule-dialog"
+import { REFRESH_INTERVALS } from "@/lib/config"
 
 interface Alert {
   id: number
@@ -122,13 +123,16 @@ export function WeatherAlerts() {
   useEffect(() => {
     fetchAlerts()
 
-    // Set up polling for real-time updates (every 30 seconds)
+    // Set up polling for real-time updates
     const interval = setInterval(() => {
-      fetchAlerts()
-    }, 30000)
+      // Don't refresh if reschedule dialog is open
+      if (!rescheduleDialogOpen) {
+        fetchAlerts()
+      }
+    }, REFRESH_INTERVALS.WEATHER_ALERTS)
 
     return () => clearInterval(interval)
-  }, [])
+  }, [rescheduleDialogOpen])
 
   const handleRefresh = () => {
     fetchAlerts(true)
@@ -302,7 +306,7 @@ export function WeatherAlerts() {
               variant="outline"
               size="sm"
               onClick={handleRefresh}
-              disabled={refreshing}
+              disabled={refreshing || rescheduleDialogOpen}
               className="border-blue-300 text-slate-700 hover:bg-blue-50 bg-transparent"
             >
               <RefreshCw className={`h-3 w-3 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
@@ -394,11 +398,11 @@ export function WeatherAlerts() {
                           AI Reschedule
                         </Button>
                       )}
-                      {alert.flight.instructor && (
+                      {alert.flight.instructor && alert.actions && (
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleAction(alert.actions.find(a => a.action === 'contact_instructor'))}
+                          onClick={() => handleAction(alert.actions?.find(a => a.action === 'contact_instructor'))}
                           className="text-slate-600 hover:bg-slate-100"
                         >
                           Contact Instructor

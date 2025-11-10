@@ -53,6 +53,29 @@ export interface ApiResponse<T = any> {
   error?: string
 }
 
+// Pagination response type
+export interface PaginatedResponse<T> {
+  data: T[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    pages: number
+  }
+}
+
+// Unified response type that handles both direct arrays and paginated responses
+export interface BookingsResponse {
+  bookings?: Booking[]
+  data?: Booking[]
+  pagination?: {
+    page: number
+    limit: number
+    total: number
+    pages: number
+  }
+}
+
 // Booking types
 export interface Booking {
   id: number
@@ -215,7 +238,7 @@ export const api = {
       upcoming?: boolean
       page?: number
       limit?: number
-    }) => axiosInstance.get<Booking[]>('/api/bookings', { params }),
+    }) => axiosInstance.get<BookingsResponse>('/api/bookings', { params }),
 
     getById: (id: number) =>
       axiosInstance.get<Booking>(`/api/bookings/${id}`),

@@ -23,11 +23,13 @@ export default function SignupPage() {
     trainingLevel: "",
   })
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
   const router = useRouter()
   const { login } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError("") // Clear any previous errors
 
     // Validation
     if (!formData.name || !formData.email || !formData.password || !formData.trainingLevel) {
@@ -64,12 +66,19 @@ export default function SignupPage() {
 
     } catch (error: any) {
       console.error("Signup error:", error)
-      let errorMessage = "Failed to create account"
 
+      // Handle 409 error specifically to show inline error message
+      if (error.response?.status === 409) {
+        setError("A user is already associated with this email address. Try signing in instead.")
+        return
+      }
+
+      // Handle other errors with toast
+      let errorMessage = "Failed to create account"
       if (error.response?.data?.error) {
         errorMessage = error.response.data.error
         // Add more specific error details for 409 errors
-        if (error.response.status === 409 && error.response.data.details) {
+        if (error.response.data.details) {
           const details = error.response.data.details
           if (details.suggestion) {
             errorMessage += `. ${details.suggestion}`
@@ -79,8 +88,6 @@ export default function SignupPage() {
         errorMessage = error.response.data.details.map((d: any) => d.message).join(", ")
       } else if (error.response?.status === 400) {
         errorMessage = "Invalid input. Please check your form data."
-      } else if (error.response?.status === 409) {
-        errorMessage = "An account with this email already exists. Try signing in instead."
       } else if (error.response?.data?.message) {
         errorMessage = error.response.data.message
       }
@@ -132,7 +139,10 @@ export default function SignupPage() {
                   type="email"
                   placeholder="pilot@example.com"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value })
+                    setError("") // Clear error when user starts typing
+                  }}
                   required
                   className="bg-white border-blue-200 text-slate-900 placeholder:text-slate-400 focus:border-blue-500"
                 />
@@ -189,7 +199,13 @@ export default function SignupPage() {
               </Button>
             </form>
 
-    
+            {/* Error message display */}
+            {error && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-600 font-medium">{error}</p>
+              </div>
+            )}
+
             <p className="text-center text-sm text-slate-600 mt-6">
               Already have an account?{" "}
               <Link href="/login" className="text-blue-600 hover:text-blue-700 font-semibold">

@@ -12,7 +12,7 @@ model User {
   email     String   @unique
   password  String
   name      String
-  role      Role     @default(STUDENT)
+  role      String   @default("student")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   student   Student?
@@ -20,17 +20,12 @@ model User {
   @@map("users")
 }
 
-enum Role {
-  STUDENT
-  INSTRUCTOR
-  ADMIN
-}
-
 model Student {
   id            Int       @id @default(autoincrement())
   userId        Int?      @unique
   name          String
   email         String    @unique
+  phone         String?
   trainingLevel String
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -44,6 +39,7 @@ model Instructor {
   id        Int       @id @default(autoincrement())
   name      String
   email     String    @unique
+  phone     String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   bookings  Booking[]

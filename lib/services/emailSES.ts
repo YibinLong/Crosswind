@@ -1,4 +1,3 @@
-import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 import { logger } from '../logger';
 import { EmailOptions, EmailService } from './email';
 
@@ -7,14 +6,15 @@ import { EmailOptions, EmailService } from './email';
  * Requires AWS credentials and SES configuration
  */
 export class ProductionEmailService implements EmailService {
-  private sesClient: SESClient;
+  private sesClient: any;
   private isInitialized: boolean = false;
+  private SendEmailCommand: any;
 
   constructor() {
     this.initializeClient();
   }
 
-  private initializeClient() {
+  private async initializeClient() {
     try {
       // Check if required environment variables are set
       const awsRegion = process.env.AWS_SES_REGION;
@@ -26,6 +26,8 @@ export class ProductionEmailService implements EmailService {
         return;
       }
 
+      // Dynamically import AWS SES only when needed
+      const { SESClient, SendEmailCommand } = await import('@aws-sdk/client-ses');
       this.sesClient = new SESClient({
         region: awsRegion,
         credentials: {
@@ -33,6 +35,7 @@ export class ProductionEmailService implements EmailService {
           secretAccessKey: awsSecretAccessKey,
         },
       });
+      this.SendEmailCommand = SendEmailCommand;
 
       this.isInitialized = true;
       logger.info('Production email service initialized with AWS SES');
@@ -85,7 +88,7 @@ export class ProductionEmailService implements EmailService {
         ReplyToAddresses: options.replyTo ? [options.replyTo] : undefined,
       };
 
-      const command = new SendEmailCommand(params);
+      const command = new this.SendEmailCommand(params);
       const result = await this.sesClient.send(command);
 
       logger.info('Email sent successfully via AWS SES', {

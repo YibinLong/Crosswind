@@ -1,18 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
-import { withAuth, requireRole } from '@/lib/middleware/auth'
+import { authenticate, hasRole } from '@/lib/middleware/auth'
 
 const prisma = new PrismaClient()
 
 export async function GET(request: NextRequest) {
-  // Apply authentication and role-based access control
-  const authResponse = await withAuth(request)
-  if (authResponse) return authResponse
-
-  // Only allow admin and instructor roles to access analytics
-  const roleResponse = await requireRole(request, ['admin', 'instructor'])
-  if (roleResponse) return roleResponse
   try {
+    // Apply authentication and role-based access control
+    const authResponse = await authenticate(request)
+    if (authResponse) return authResponse
+
+    const user = (request as any).user
+    if (!hasRole(user, 'instructor') && !hasRole(user, 'admin')) {
+      return NextResponse.json(
+        { error: 'Access denied. Required role: admin or instructor' },
+        { status: 403 }
+      )
+    }
     const { searchParams } = new URL(request.url)
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')

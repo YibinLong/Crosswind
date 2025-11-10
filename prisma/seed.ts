@@ -26,7 +26,7 @@ async function main() {
       email: 'admin@crosswind.app',
       password: hashedPassword,
       name: 'Admin User',
-      role: 'admin',
+      role: 'ADMIN',
     },
   });
 
@@ -35,7 +35,7 @@ async function main() {
       email: 'student@crosswind.app',
       password: hashedPassword,
       name: 'John Student',
-      role: 'student',
+      role: 'STUDENT',
     },
   });
 

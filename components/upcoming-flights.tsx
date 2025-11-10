@@ -223,16 +223,18 @@ export function UpcomingFlights() {
                   </div>
                 )}
 
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full border-blue-300 text-slate-700 hover:bg-blue-50 bg-transparent"
-                    onClick={() => handleReschedule(flight)}
-                  >
-                    Reschedule
-                  </Button>
-                </div>
+                {flight.status === 'conflict' && (
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full border-red-300 text-red-700 hover:bg-red-50 bg-transparent"
+                      onClick={() => handleReschedule(flight)}
+                    >
+                      Reschedule
+                    </Button>
+                  </div>
+                )}
               </div>
             ))
           )}

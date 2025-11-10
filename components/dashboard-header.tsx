@@ -15,13 +15,10 @@ import {
 import { useAuth } from "@/lib/authContext"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { BookFlightDialog } from "@/components/book-flight-dialog"
-import { useState } from "react"
 
 export function DashboardHeader() {
   const { user } = useAuth()
   const router = useRouter()
-  const [bookFlightOpen, setBookFlightOpen] = useState(false)
 
   const handleLogout = async () => {
     try {
@@ -54,21 +51,10 @@ export function DashboardHeader() {
               <Link href="/flights" className="text-slate-600 hover:text-blue-600 transition-colors font-medium">
                 Flights
               </Link>
-              <Link href="/analytics" className="text-slate-600 hover:text-blue-600 transition-colors font-medium">
-                Analytics
-              </Link>
             </nav>
 
             {/* Actions */}
             <div className="flex items-center gap-4">
-              <Button
-                className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 gap-2 shadow-lg shadow-blue-200"
-                onClick={() => setBookFlightOpen(true)}
-              >
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Book Flight</span>
-              </Button>
-
               <Link href="/flights?filter=conflicts">
                 <Button variant="ghost" size="icon" className="relative hover:bg-blue-50">
                   <Bell className="h-5 w-5 text-slate-700" />
@@ -114,11 +100,6 @@ export function DashboardHeader() {
           </div>
         </div>
       </header>
-
-      <BookFlightDialog
-        open={bookFlightOpen}
-        onOpenChange={setBookFlightOpen}
-      />
     </>
   )
 }

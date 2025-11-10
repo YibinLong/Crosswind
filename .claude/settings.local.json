@@ -47,7 +47,12 @@
       "Bash(BashOutput 240ab8)",
       "Bash(npx prisma db seed:*)",
       "Bash(echo:*)",
-      "Bash(claude mcp add:*)"
+      "Bash(claude mcp add:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git remote:*)",
+      "Bash(git pull:*)"
     ],
     "deny": [],
     "ask": []

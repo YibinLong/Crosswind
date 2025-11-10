@@ -1,6 +1,5 @@
 import { logger } from '../logger';
 import { developmentEmailService } from './email';
-import { productionEmailService } from './emailSES';
 import { EmailOptions } from './email';
 
 export type NotificationType =
@@ -105,7 +104,8 @@ export class NotificationService {
    * Send single email with retry logic
    */
   private async sendEmailWithRetry(emailOptions: EmailOptions, attempt: number = 1): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    const emailService = this.isProduction ? productionEmailService : developmentEmailService;
+    // Always use development service (Gmail SMTP) since we removed AWS SES
+    const emailService = developmentEmailService;
 
     try {
       const result = await emailService.sendEmail(emailOptions);
@@ -152,8 +152,8 @@ export class NotificationService {
    * Verify email service connection
    */
   async verifyConnection(): Promise<boolean> {
-    const emailService = this.isProduction ? productionEmailService : developmentEmailService;
-    return emailService.verifyConnection();
+    // Always use development service (Gmail SMTP) since we removed AWS SES
+    return developmentEmailService.verifyConnection();
   }
 }
 

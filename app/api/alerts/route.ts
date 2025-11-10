@@ -58,31 +58,79 @@ export const GET = withAuth(async (req: NextRequest) => {
     // Apply role-based filtering
     if (user.role === 'student') {
       // Students can only see their own bookings
-      const student = await prisma.student.findUnique({
-        where: { email: user.email },
+      // First try to find student by userId
+      let student = await prisma.student.findFirst({
+        where: { userId: user.id },
         select: { id: true }
       })
 
+      // If not found by userId, try by email for backward compatibility
       if (!student) {
-        return NextResponse.json(
-          { error: 'Student profile not found' },
-          { status: 404 }
-        )
+        student = await prisma.student.findUnique({
+          where: { email: user.email },
+          select: { id: true }
+        })
+      }
+
+      if (!student) {
+        // If still not found, return empty alerts instead of error
+        return NextResponse.json({
+          success: true,
+          alerts: [],
+          summary: {
+            totalAlerts: 0,
+            conflictCount: 0,
+            reminderCount: 0,
+            pendingReschedules: 0,
+            hasRescheduleOptions: false
+          },
+          pagination: {
+            total: 0,
+            limit,
+            offset,
+            hasMore: false
+          },
+          filters: {
+            status,
+            studentId: null,
+            instructorId: null
+          }
+        })
       }
 
       whereClause.studentId = student.id
     } else if (user.role === 'instructor') {
       // Instructors can see bookings assigned to them
-      const instructor = await prisma.instructor.findUnique({
+      // First try to find instructor by matching email
+      let instructor = await prisma.instructor.findUnique({
         where: { email: user.email },
         select: { id: true }
       })
 
       if (!instructor) {
-        return NextResponse.json(
-          { error: 'Instructor profile not found' },
-          { status: 404 }
-        )
+        // If not found, return empty alerts instead of error
+        return NextResponse.json({
+          success: true,
+          alerts: [],
+          summary: {
+            totalAlerts: 0,
+            conflictCount: 0,
+            reminderCount: 0,
+            pendingReschedules: 0,
+            hasRescheduleOptions: false
+          },
+          pagination: {
+            total: 0,
+            limit,
+            offset,
+            hasMore: false
+          },
+          filters: {
+            status,
+            studentId: null,
+            instructorId: null
+          }
+        })
       }
 
       whereClause.instructorId = instructor.id

@@ -1,3 +1,6 @@
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getUserByEmail, createUser, generateToken } from '@/lib/auth'
@@ -11,6 +14,13 @@ const signupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters long'),
   trainingLevel: z.enum(['student-pilot', 'private-pilot', 'instrument-rated', 'commercial-pilot', 'instructor']).default('student-pilot')
 })
+
+// Basic CORS headers to satisfy potential preflight requests in some prod setups
+const corsHeaders: Record<string, string> = {
+  'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_SITE_URL || '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
 
 // Map frontend training levels to database values
 const mapTrainingLevel = (level: string): string => {
@@ -114,7 +124,7 @@ export async function POST(req: NextRequest) {
     const duration = endTime - startTime
     console.log(`✅ [SIGNUP SUCCESS] User created in ${duration}ms - ${email} (${userRole})`)
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       message: 'User created successfully',
       user: userWithoutPassword,
       token,
@@ -126,6 +136,9 @@ export async function POST(req: NextRequest) {
         hasSampleData: !!sampleDataInfo
       }
     }, { status: 201 })
+    // Add CORS headers (harmless for same-origin, fixes strict environments)
+    Object.entries(corsHeaders).forEach(([k, v]) => response.headers.set(k, v))
+    return response
 
   } catch (error) {
     const endTime = Date.now()
@@ -208,7 +221,8 @@ export async function GET(req: NextRequest) {
   }, {
     status: 405,
     headers: {
-      'Allow': 'POST'
+      'Allow': 'POST, OPTIONS',
+      ...corsHeaders,
     }
   })
 }
@@ -243,4 +257,14 @@ export async function PATCH(req: NextRequest) {
     error: 'Method not allowed - Use POST for signup',
     debugInfo: { timestamp, method: 'PATCH' }
   }, { status: 405 })
+}
+
+// Explicitly handle OPTIONS for CORS/preflight in production environments
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      ...corsHeaders,
+    },
+  })
 }

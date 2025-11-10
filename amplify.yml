@@ -3,10 +3,12 @@ frontend:
   phases:
     preBuild:
       commands:
-        - npm ci
+        - echo "Installing dependencies..."
+        - npm ci --legacy-peer-deps
         - npx prisma generate
     build:
       commands:
+        - echo "Building application..."
         - npm run build
   artifacts:
     baseDirectory: .next
@@ -16,3 +18,10 @@ frontend:
     paths:
       - node_modules/**/*
       - .next/cache/**/*
+  buildLogs:
+    cloudWatch: true
+  stack:
+    envVariables:
+      AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+    tags:
+      - App: Crosswind

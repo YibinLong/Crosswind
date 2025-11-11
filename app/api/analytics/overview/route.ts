@@ -4,8 +4,6 @@ import { authenticate, hasRole } from '@/lib/middleware/auth'
 
 const prisma = new PrismaClient()
 
-export const dynamic = 'force-dynamic'
-
 export async function GET(request: NextRequest) {
   try {
     // Apply authentication and role-based access control

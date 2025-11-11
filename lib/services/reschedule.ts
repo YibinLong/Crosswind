@@ -46,14 +46,8 @@ export class RescheduleService {
         };
       }
 
-      // Verify booking has a conflict status
-      if (booking.status !== 'conflict') {
-        return {
-          success: false,
-          error: `Booking must have 'conflict' status to generate reschedule suggestions. Current status: ${booking.status}`,
-          bookingId: request.bookingId
-        };
-      }
+      // REMOVED: Allow AI-powered rescheduling for ALL flight statuses, not just conflicts
+      // This enables proactive rescheduling and optimization for any booking
 
       // Build context for AI
       const context = await this.buildRescheduleContext(booking, request.constraints);

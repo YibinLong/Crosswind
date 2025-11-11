@@ -20,6 +20,7 @@ const createBookingSchema = z.object({
 export const GET = withAuth(async (req: NextRequest) => {
   try {
     const { searchParams } = new URL(req.url)
+    const currentUser = (req as any).user
 
     // Parse query parameters
     const status = searchParams.get('status')
@@ -34,6 +35,22 @@ export const GET = withAuth(async (req: NextRequest) => {
 
     // Build where clause
     const where: any = {}
+
+    // Only show flights for the current user
+    if (currentUser.role === 'student') {
+      // For students, only show their own flights
+      where.student = {
+        user: {
+          email: currentUser.email
+        }
+      }
+    } else if (currentUser.role === 'instructor') {
+      // For instructors, show flights assigned to them
+      where.instructor = {
+        email: currentUser.email
+      }
+    }
+    // For admins, show all flights (no additional filter needed)
 
     if (status) where.status = status
     if (studentId) where.studentId = parseInt(studentId)

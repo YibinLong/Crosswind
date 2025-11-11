@@ -2,8 +2,9 @@
 
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Bell, Plus, Plane } from "lucide-react"
+import { Plane } from "lucide-react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +20,11 @@ import { toast } from "sonner"
 export function DashboardHeader() {
   const { user } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
+
+  const isActiveLink = (href: string) => {
+    return pathname === href
+  }
 
   const handleLogout = async () => {
     try {
@@ -45,23 +51,30 @@ export function DashboardHeader() {
 
             {/* Navigation */}
             <nav className="hidden md:flex items-center gap-6">
-              <Link href="/dashboard" className="text-slate-900 font-semibold">
+              <Link
+                href="/dashboard"
+                className={`transition-colors ${
+                  isActiveLink('/dashboard')
+                    ? 'text-slate-900 font-bold'
+                    : 'text-slate-600 hover:text-blue-600 font-normal'
+                }`}
+              >
                 Dashboard
               </Link>
-              <Link href="/flights" className="text-slate-600 hover:text-blue-600 transition-colors font-medium">
+              <Link
+                href="/flights"
+                className={`transition-colors ${
+                  isActiveLink('/flights')
+                    ? 'text-slate-900 font-bold'
+                    : 'text-slate-600 hover:text-blue-600 font-normal'
+                }`}
+              >
                 Flights
               </Link>
             </nav>
 
             {/* Actions */}
             <div className="flex items-center gap-4">
-              <Link href="/flights?filter=conflicts">
-                <Button variant="ghost" size="icon" className="relative hover:bg-blue-50">
-                  <Bell className="h-5 w-5 text-slate-700" />
-                  <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full" title="Weather conflicts detected" />
-                </Button>
-              </Link>
-
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-blue-50">
@@ -80,13 +93,6 @@ export function DashboardHeader() {
                       <div className="text-xs text-slate-500 font-normal">{user.email}</div>
                     )}
                   </DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-blue-200" />
-                  <DropdownMenuItem className="text-slate-700 hover:bg-blue-50">
-                    <Link href="/profile" className="w-full">Profile</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="text-slate-700 hover:bg-blue-50">
-                    <Link href="/settings" className="w-full">Settings</Link>
-                  </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-blue-200" />
                   <DropdownMenuItem
                     className="text-slate-700 hover:bg-blue-50 cursor-pointer"

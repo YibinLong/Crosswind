@@ -196,16 +196,8 @@ export const POST = withAuth(async (req: NextRequest, { params }: { params: Prom
 
     console.log('🔍 [API DEBUG] Authorization passed - continuing...')
 
-    // Verify booking has a conflict status (unless force regenerate is requested)
-    if (booking.status !== 'conflict' && !validation.data.forceRegenerate) {
-      return NextResponse.json(
-        {
-          error: `Booking must have 'conflict' status to generate reschedule suggestions. Current status: ${booking.status}`,
-          suggestion: 'Set forceRegenerate to true to override this check'
-        },
-        { status: 400 }
-      )
-    }
+    // REMOVED: Allow AI-powered rescheduling for ALL flight statuses, not just conflicts
+    // This enables proactive rescheduling and optimization for any booking
 
     // Check if there are existing unselected suggestions
     const existingSuggestions = await rescheduleService.getExistingSuggestions(bookingId)

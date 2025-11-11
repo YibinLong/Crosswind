@@ -3,11 +3,17 @@
 import { Button } from "@/components/ui/button"
 import { Plane, Menu } from "lucide-react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { useState } from "react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
+  const pathname = usePathname()
+
+  const isActiveLink = (href: string) => {
+    return pathname === href
+  }
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-white/95 backdrop-blur-md border-b border-blue-200 shadow-sm">
@@ -22,13 +28,34 @@ export function Navigation() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            <Link href="/dashboard" className="text-slate-700 hover:text-blue-600 transition-colors font-medium">
+            <Link
+              href="/dashboard"
+              className={`transition-colors ${
+                isActiveLink('/dashboard')
+                  ? 'text-blue-600 font-bold'
+                  : 'text-slate-700 hover:text-blue-600 font-normal'
+              }`}
+            >
               Dashboard
             </Link>
-            <Link href="/flights" className="text-slate-700 hover:text-blue-600 transition-colors font-medium">
+            <Link
+              href="/flights"
+              className={`transition-colors ${
+                isActiveLink('/flights')
+                  ? 'text-blue-600 font-bold'
+                  : 'text-slate-700 hover:text-blue-600 font-normal'
+              }`}
+            >
               Flights
             </Link>
-            <Link href="/analytics" className="text-slate-700 hover:text-blue-600 transition-colors font-medium">
+            <Link
+              href="/analytics"
+              className={`transition-colors ${
+                isActiveLink('/analytics')
+                  ? 'text-blue-600 font-bold'
+                  : 'text-slate-700 hover:text-blue-600 font-normal'
+              }`}
+            >
               Analytics
             </Link>
             <Link href="/login">
@@ -54,19 +81,31 @@ export function Navigation() {
               <div className="flex flex-col gap-4 mt-8">
                 <Link
                   href="/dashboard"
-                  className="text-slate-700 hover:text-blue-600 transition-colors text-lg font-medium"
+                  className={`transition-colors text-lg ${
+                    isActiveLink('/dashboard')
+                      ? 'text-blue-600 font-bold'
+                      : 'text-slate-700 hover:text-blue-600 font-normal'
+                  }`}
                 >
                   Dashboard
                 </Link>
                 <Link
                   href="/flights"
-                  className="text-slate-700 hover:text-blue-600 transition-colors text-lg font-medium"
+                  className={`transition-colors text-lg ${
+                    isActiveLink('/flights')
+                      ? 'text-blue-600 font-bold'
+                      : 'text-slate-700 hover:text-blue-600 font-normal'
+                  }`}
                 >
                   Flights
                 </Link>
                 <Link
                   href="/analytics"
-                  className="text-slate-700 hover:text-blue-600 transition-colors text-lg font-medium"
+                  className={`transition-colors text-lg ${
+                    isActiveLink('/analytics')
+                      ? 'text-blue-600 font-bold'
+                      : 'text-slate-700 hover:text-blue-600 font-normal'
+                  }`}
                 >
                   Analytics
                 </Link>

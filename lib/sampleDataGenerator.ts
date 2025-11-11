@@ -37,70 +37,90 @@ export async function generateSampleDataForStudent(studentId: number, studentEma
     const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
     const dayAfter = new Date(now.getTime() + 48 * 60 * 60 * 1000);
     const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const nextMonth = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-    // Create 4 flights for the new student
-    const bookings = await Promise.all([
-      // Flight 1: Conflict with weather (tomorrow morning)
-      prisma.booking.create({
+    // Generate 25 flights for the new student with 10 conflicts
+    const bookings: any[] = [];
+
+    // Conflict flights (10 total)
+    const conflictDates = [
+      new Date(tomorrow.getTime() + 9 * 60 * 60 * 1000), // 9 AM tomorrow
+      new Date(tomorrow.getTime() + 15 * 60 * 60 * 1000), // 3 PM tomorrow
+      new Date(dayAfter.getTime() + 10 * 60 * 60 * 1000), // 10 AM day after
+      new Date(dayAfter.getTime() + 16 * 60 * 60 * 1000), // 4 PM day after
+      new Date(nextWeek.getTime() + 11 * 60 * 60 * 1000), // 11 AM next week
+      new Date(nextWeek.getTime() + 14 * 60 * 60 * 1000), // 2 PM next week
+      new Date(nextWeek.getTime() + 17 * 60 * 60 * 1000), // 5 PM next week
+      new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000 + 9 * 60 * 60 * 1000), // 9 AM in 10 days
+      new Date(now.getTime() + 12 * 24 * 60 * 60 * 1000 + 13 * 60 * 60 * 1000), // 1 PM in 12 days
+      new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000 + 16 * 60 * 60 * 1000), // 4 PM in 14 days
+    ];
+
+    // Conflict bookings
+    for (let i = 0; i < 10; i++) {
+      const instructor = freshInstructors[i % freshInstructors.length];
+      const aircraft = freshAircraft[i % freshAircraft.length];
+
+      const booking = await prisma.booking.create({
         data: {
           studentId,
-          instructorId: freshInstructors[0].id,
-          aircraftId: freshAircraft[0].id,
-          scheduledDate: new Date(tomorrow.getTime() + 9 * 60 * 60 * 1000), // 9 AM tomorrow
-          departureLat: 37.7749, // San Francisco
-          departureLon: -122.4194,
-          arrivalLat: 37.6213, // San Jose
-          arrivalLon: -122.3790,
+          instructorId: instructor.id,
+          aircraftId: aircraft.id,
+          scheduledDate: conflictDates[i],
+          departureLat: 37.7749 + (Math.random() - 0.5) * 0.5, // San Francisco area
+          departureLon: -122.4194 + (Math.random() - 0.5) * 0.5,
+          arrivalLat: 37.6213 + (Math.random() - 0.5) * 0.5, // Bay area destinations
+          arrivalLon: -122.3790 + (Math.random() - 0.5) * 0.5,
           status: 'conflict',
         },
-      }),
-      // Flight 2: Confirmed flight (tomorrow afternoon)
-      prisma.booking.create({
+      });
+      bookings.push(booking);
+    }
+
+    // Non-conflict flights (15 total)
+    const confirmedDates = [
+      new Date(tomorrow.getTime() + 12 * 60 * 60 * 1000), // 12 PM tomorrow
+      new Date(dayAfter.getTime() + 14 * 60 * 60 * 1000), // 2 PM day after
+      new Date(nextWeek.getTime() + 9 * 60 * 60 * 1000), // 9 AM next week
+      new Date(nextWeek.getTime() + 16 * 60 * 60 * 1000), // 4 PM next week
+      new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000 + 10 * 60 * 60 * 1000), // 10 AM in 3 days
+      new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000 + 15 * 60 * 60 * 1000), // 3 PM in 3 days
+      new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000 + 11 * 60 * 60 * 1000), // 11 AM in 5 days
+      new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000 + 14 * 60 * 60 * 1000), // 2 PM in 5 days
+      new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000 + 9 * 60 * 60 * 1000), // 9 AM in 7 days
+      new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000 + 13 * 60 * 60 * 1000), // 1 PM in 7 days
+      new Date(now.getTime() + 9 * 24 * 60 * 60 * 1000 + 10 * 60 * 60 * 1000), // 10 AM in 9 days
+      new Date(now.getTime() + 11 * 24 * 60 * 60 * 1000 + 15 * 60 * 60 * 1000), // 3 PM in 11 days
+      new Date(now.getTime() + 13 * 24 * 60 * 60 * 1000 + 12 * 60 * 60 * 1000), // 12 PM in 13 days
+      new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000 + 9 * 60 * 60 * 1000), // 9 AM in 15 days
+      new Date(now.getTime() + 16 * 24 * 60 * 60 * 1000 + 14 * 60 * 60 * 1000), // 2 PM in 16 days
+    ];
+
+    // Non-conflict bookings (mix of confirmed and scheduled)
+    for (let i = 0; i < 15; i++) {
+      const instructor = freshInstructors[(i + 2) % freshInstructors.length];
+      const aircraft = freshAircraft[(i + 2) % freshAircraft.length];
+      const status = i < 8 ? 'confirmed' : 'scheduled';
+
+      const booking = await prisma.booking.create({
         data: {
           studentId,
-          instructorId: freshInstructors[1].id,
-          aircraftId: freshAircraft[1].id,
-          scheduledDate: new Date(tomorrow.getTime() + 14 * 60 * 60 * 1000), // 2 PM tomorrow
-          departureLat: 37.7749, // San Francisco
-          departureLon: -122.4194,
-          arrivalLat: 38.5816, // Sacramento
-          arrivalLon: -121.4944,
-          status: 'confirmed',
+          instructorId: instructor.id,
+          aircraftId: aircraft.id,
+          scheduledDate: confirmedDates[i],
+          departureLat: 37.7749 + (Math.random() - 0.5) * 0.5, // San Francisco area
+          departureLon: -122.4194 + (Math.random() - 0.5) * 0.5,
+          arrivalLat: 37.6213 + (Math.random() - 0.5) * 0.5, // Bay area destinations
+          arrivalLon: -122.3790 + (Math.random() - 0.5) * 0.5,
+          status: status,
         },
-      }),
-      // Flight 3: Scheduled flight (day after tomorrow)
-      prisma.booking.create({
-        data: {
-          studentId,
-          instructorId: freshInstructors[0].id,
-          aircraftId: freshAircraft[2].id,
-          scheduledDate: new Date(dayAfter.getTime() + 10 * 60 * 60 * 1000), // 10 AM day after
-          departureLat: 37.7749, // San Francisco
-          departureLon: -122.4194,
-          arrivalLat: 36.7783, // Fresno
-          arrivalLon: -119.4179,
-          status: 'scheduled',
-        },
-      }),
-      // Flight 4: Another conflict (next week)
-      prisma.booking.create({
-        data: {
-          studentId,
-          instructorId: freshInstructors[1].id,
-          aircraftId: freshAircraft[0].id,
-          scheduledDate: new Date(nextWeek.getTime() + 15 * 60 * 60 * 1000), // 3 PM next week
-          departureLat: 37.7749, // San Francisco
-          departureLon: -122.4194,
-          arrivalLat: 37.3382, // San Jose again
-          arrivalLon: -121.8863,
-          status: 'conflict',
-        },
-      }),
-    ]);
+      });
+      bookings.push(booking);
+    }
 
     console.log(`✅ Created ${bookings.length} flights for ${studentName}`);
 
-    // Create weather reports and reschedule suggestions for conflict bookings (3 alerts)
+    // Create weather reports and reschedule suggestions for conflict bookings (10 alerts)
     const conflictBookings = bookings.filter(b => b.status === 'conflict');
 
     for (const conflictBooking of conflictBookings) {

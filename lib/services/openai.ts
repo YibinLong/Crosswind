@@ -277,7 +277,7 @@ Provide responses in JSON format as requested. Be specific about weather conditi
     return goodWeatherSlots.slice(0, 3).map((slot, index) => ({
       proposedDate: slot.date,
       proposedTime: slot.time,
-      confidence: 0.6, // Lower confidence for fallback
+      confidence: 0.65 + (index * 0.05), // Varying confidence: 65%, 70%, 75%
       reason: 'Rule-based suggestion: Improved weather conditions expected',
       weatherSummary: `${slot.weatherForecast?.conditions || 'Improved conditions'} - Wind: ${slot.weatherForecast?.windSpeed} knots, Visibility: ${slot.weatherForecast?.visibility} miles`,
       advantages: [

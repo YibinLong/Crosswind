@@ -268,10 +268,10 @@ export function RescheduleDialog({ open, onOpenChange, flight, onSuccess }: Resc
       return `Wind ${weatherReport.windKts}kt${weatherReport.windGustKts ? ` gusting ${weatherReport.windGustKts}kt` : ''} exceeds limits`
     }
     if (issues.includes('visibility')) {
-      return `Visibility ${weatherReport.visibility}mi below minimum`
+      return `Visibility ${weatherReport.visibility} mi below minimum`
     }
     if (issues.includes('ceiling')) {
-      return `Ceiling ${weatherReport.ceilingFt}ft below minimum`
+      return `Ceiling ${weatherReport.ceilingFt} ft below minimum`
     }
 
     return `Weather conditions: ${weatherReport.condition}`
@@ -419,7 +419,7 @@ export function RescheduleDialog({ open, onOpenChange, flight, onSuccess }: Resc
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge className="bg-green-100 text-green-700 border-green-300">
-                      {Math.round(option.confidence)}% Match
+                      {Math.round(option.confidence * 100)}% Match
                     </Badge>
                     {selectedOption === optionKey && <CheckCircle2 className="h-5 w-5 text-blue-600" />}
                   </div>

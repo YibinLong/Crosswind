@@ -8,17 +8,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import { Search, Plus, Filter, Plane, MapPin, Clock, User, Calendar, AlertTriangle, RefreshCw } from "lucide-react"
 import { useState, useEffect } from "react"
-import { BookFlightDialog } from "@/components/book-flight-dialog"
 import { RescheduleDialog } from "@/components/reschedule-dialog"
 import { api, Booking } from "@/lib/api"
 import { format } from "date-fns"
-import { formatShortRoute } from "@/lib/utils"
+import { formatShortRoute, formatWeatherConflictMessage } from "@/lib/utils"
 import { REFRESH_INTERVALS, PAGINATION } from "@/lib/config"
 
 export function FlightsList() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [bookFlightOpen, setBookFlightOpen] = useState(false)
   const [rescheduleOpen, setRescheduleOpen] = useState(false)
   const [selectedFlight, setSelectedFlight] = useState<Booking | null>(null)
   const [flights, setFlights] = useState<Booking[]>([])
@@ -140,22 +138,7 @@ export function FlightsList() {
   }
 
   const getWeatherConflictMessage = (booking: Booking) => {
-    if (!hasWeatherConflict(booking)) return null
-
-    const weatherReport = booking.weatherReports![0]
-    const issues = weatherReport.violatedMinimums || []
-
-    if (issues.includes('wind')) {
-      return `Wind ${weatherReport.windKts}kt${weatherReport.windGustKts ? ` gusting ${weatherReport.windGustKts}kt` : ''} exceeds limits`
-    }
-    if (issues.includes('visibility')) {
-      return `Visibility ${weatherReport.visibility}mi below minimum`
-    }
-    if (issues.includes('ceiling')) {
-      return `Ceiling ${weatherReport.ceilingFt}ft below minimum`
-    }
-
-    return `Weather conditions: ${weatherReport.condition}`
+    return formatWeatherConflictMessage(booking)
   }
 
   // Loading state
@@ -260,13 +243,6 @@ export function FlightsList() {
               >
                 <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
               </Button>
-              <Button
-                className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 gap-2 shadow-lg shadow-blue-200"
-                onClick={() => setBookFlightOpen(true)}
-              >
-                <Plus className="h-4 w-4" />
-                Book Flight
-              </Button>
             </div>
           </div>
         </CardHeader>
@@ -288,18 +264,9 @@ export function FlightsList() {
               <p className="text-slate-400 text-sm mt-2">
                 {searchQuery || statusFilter !== 'all'
                   ? 'Try adjusting your search or filters'
-                  : 'Get started by booking your first flight'
+                  : 'No flights scheduled'
                 }
               </p>
-              {!searchQuery && statusFilter === 'all' && (
-                <Button
-                  className="mt-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 gap-2 shadow-lg shadow-blue-200"
-                  onClick={() => setBookFlightOpen(true)}
-                >
-                  <Plus className="h-4 w-4" />
-                  Book Flight
-                </Button>
-              )}
             </div>
           ) : (
             <>
@@ -402,32 +369,12 @@ export function FlightsList() {
                     <div className="flex gap-2">
                       <Button
                         size="sm"
-                        variant="outline"
-                        className="border-blue-300 text-slate-700 hover:bg-blue-50 bg-transparent"
+                        className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-lg shadow-blue-200"
+                        onClick={() => handleReschedule(flight)}
+                        data-testid={`reschedule-button-${flight.id}`}
                       >
-                        View Details
+                        AI Reschedule
                       </Button>
-                      {flight.status === "conflict" && (
-                        <Button
-                          size="sm"
-                          className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-lg shadow-blue-200"
-                          onClick={() => handleReschedule(flight)}
-                          data-testid={`reschedule-button-${flight.id}`}
-                        >
-                          AI Reschedule
-                        </Button>
-                      )}
-                      {flight.status !== "conflict" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-blue-300 text-slate-700 hover:bg-blue-50 bg-transparent"
-                          onClick={() => handleReschedule(flight)}
-                          data-testid={`reschedule-button-${flight.id}`}
-                        >
-                          Reschedule
-                        </Button>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -469,7 +416,6 @@ export function FlightsList() {
         </CardContent>
       </Card>
 
-      <BookFlightDialog open={bookFlightOpen} onOpenChange={setBookFlightOpen} onSuccess={fetchFlights} />
       <RescheduleDialog open={rescheduleOpen} onOpenChange={setRescheduleOpen} flight={selectedFlight} onSuccess={fetchFlights} />
     </>
   )

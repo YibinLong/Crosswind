@@ -9,6 +9,13 @@ import { useEffect, useState } from "react"
 import { api } from "@/lib/api"
 import { RescheduleDialog } from "./reschedule-dialog"
 import { REFRESH_INTERVALS } from "@/lib/config"
+import {
+  formatWeatherNumber,
+  formatWindSpeed,
+  formatVisibility,
+  formatCeiling,
+  formatViolatedMinimums
+} from "@/lib/utils"
 
 interface Alert {
   id: number
@@ -123,15 +130,7 @@ export function WeatherAlerts() {
   useEffect(() => {
     fetchAlerts()
 
-    // Set up polling for real-time updates
-    const interval = setInterval(() => {
-      // Don't refresh if reschedule dialog is open
-      if (!rescheduleDialogOpen) {
-        fetchAlerts()
-      }
-    }, REFRESH_INTERVALS.WEATHER_ALERTS)
-
-    return () => clearInterval(interval)
+    // No auto-refresh - only manual refresh via button
   }, [rescheduleDialogOpen])
 
   const handleRefresh = () => {
@@ -366,14 +365,14 @@ export function WeatherAlerts() {
                         />
                         <div>
                           <p className="font-medium text-slate-900">
-                            {alert.weather.windKts}kt wind{alert.weather.windGustKts ? ` gusting to ${alert.weather.windGustKts}kt` : ''}
+                            {formatWeatherNumber(alert.weather.windKts)} kt wind{alert.weather.windGustKts ? ` gusting to ${formatWeatherNumber(alert.weather.windGustKts)} kt` : ''}
                           </p>
                           <p className="text-xs text-slate-500">
-                            Visibility: {alert.weather.visibility}mi • Ceiling: {alert.weather.ceilingFt}ft
+                            Visibility: {formatVisibility(alert.weather.visibility)} • Ceiling: {formatCeiling(alert.weather.ceilingFt)}
                           </p>
                           {alert.weather.violatedMinimums.length > 0 && (
                             <p className="text-xs text-red-600">
-                              Violated minimums: {alert.weather.violatedMinimums.join(', ')}
+                              Violated Minimums: {formatViolatedMinimums(alert.weather.violatedMinimums)}
                             </p>
                           )}
                         </div>
@@ -416,25 +415,7 @@ export function WeatherAlerts() {
           ))
         )}
 
-        {/* Summary stats at the bottom */}
-        {summary && summary.hasRescheduleOptions && (
-          <div className="mt-4 pt-4 border-t border-slate-200">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-600">
-                {summary.pendingReschedules} flight{summary.pendingReschedules !== 1 ? 's' : ''} have AI reschedule options available
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.location.href = '/flights?filter=pending_reschedule'}
-                className="border-blue-300 text-blue-700 hover:bg-blue-50"
-              >
-                View AI Options
-              </Button>
-            </div>
-          </div>
-        )}
-      </CardContent>
+        </CardContent>
     </Card>
 
     <RescheduleDialog

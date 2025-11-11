@@ -223,18 +223,20 @@ export function UpcomingFlights() {
                   </div>
                 )}
 
-                {flight.status === 'conflict' && (
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full border-red-300 text-red-700 hover:bg-red-50 bg-transparent"
-                      onClick={() => handleReschedule(flight)}
-                    >
-                      Reschedule
-                    </Button>
-                  </div>
-                )}
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className={`w-full ${
+                      flight.status === 'conflict'
+                        ? 'border-red-300 text-red-700 hover:bg-red-50 bg-transparent'
+                        : 'border-blue-300 text-blue-700 hover:bg-blue-50 bg-transparent'
+                    }`}
+                    onClick={() => handleReschedule(flight)}
+                  >
+                    AI Reschedule
+                  </Button>
+                </div>
               </div>
             ))
           )}

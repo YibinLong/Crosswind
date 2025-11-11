@@ -8,3 +8,6 @@ export default function DashboardFlightRescheduleRedirect({
   redirect(`/flights/${params.id}/reschedule`)
 }
 
+
+
+

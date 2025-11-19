@@ -180,7 +180,7 @@ export const GET = withAuth(async (req: NextRequest) => {
               }
             },
             orderBy: { createdAt: 'desc' },
-            take: 1
+            take: 5
           },
           rescheduleSuggestions: {
             where: { selected: false }, // Only unselected suggestions
@@ -205,7 +205,7 @@ export const GET = withAuth(async (req: NextRequest) => {
 
     // Format alerts for the WeatherAlerts component
     const alerts = bookings.map(booking => {
-      const weatherReport = booking.weatherReports[0]
+      const weatherReport = booking.weatherReports.find(report => report.location === 'departure') || booking.weatherReports[0]
       const isConflict = booking.status === 'conflict'
       const hasRescheduleOptions = booking.rescheduleSuggestions.length > 0
 

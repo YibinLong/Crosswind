@@ -4,13 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Calendar, MapPin, User, Clock, Plane, AlertTriangle } from "lucide-react"
+import { Calendar, Plane, AlertTriangle } from "lucide-react"
 import { useEffect, useState } from "react"
 import { api, Booking } from "@/lib/api"
-import { format } from "date-fns"
 import { RescheduleDialog } from "./reschedule-dialog"
-import { formatShortRoute } from "@/lib/utils"
+import { formatAircraftLabel, formatWeatherConflictMessage } from "@/lib/utils"
 import { REFRESH_INTERVALS } from "@/lib/config"
+import { FlightInfoGrid } from "./flight-info-grid"
 
 export function UpcomingFlights() {
   const [flights, setFlights] = useState<Booking[]>([])
@@ -56,21 +56,6 @@ export function UpcomingFlights() {
     fetchFlights() // Refresh the flights list
   }
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    const today = new Date()
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-
-    if (date.toDateString() === today.toDateString()) {
-      return `Today, ${format(date, 'h:mm a')}`
-    } else if (date.toDateString() === tomorrow.toDateString()) {
-      return `Tomorrow, ${format(date, 'h:mm a')}`
-    } else {
-      return format(date, 'MMM d, h:mm a')
-    }
-  }
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed':
@@ -85,10 +70,14 @@ export function UpcomingFlights() {
   }
 
   const hasWeatherConflict = (booking: Booking) => {
-    return booking.status === 'conflict' &&
-           booking.weatherReports &&
-           booking.weatherReports.length > 0 &&
-           !booking.weatherReports[0].isSafe
+    if (booking.status === 'conflict') {
+      return true
+    }
+    return Boolean(
+      booking.weatherReports &&
+      booking.weatherReports.length > 0 &&
+      booking.weatherReports.some((report) => report && report.isSafe === false)
+    )
   }
 
   if (loading) {
@@ -195,47 +184,38 @@ export function UpcomingFlights() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 text-sm mb-4">
-                  <div className="flex items-center gap-2 text-slate-700">
-                    <Clock className="h-4 w-4 text-slate-500" />
-                    {formatDate(flight.scheduledDate)}
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-700">
-                    <MapPin className="h-4 w-4 text-slate-500" />
-                    <span className="text-sm">
-                      {formatShortRoute(flight.departureLat, flight.departureLon, flight.arrivalLat, flight.arrivalLon)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-700">
-                    <User className="h-4 w-4 text-slate-500" />
-                    {flight.instructor?.name || 'Unassigned'}
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-700">
-                    <Plane className="h-4 w-4 text-slate-500" />
-                    {flight.aircraft?.tailNumber || 'Unassigned'}
-                  </div>
+                <div className="mb-4">
+                  <FlightInfoGrid flight={flight} />
                 </div>
 
                 {hasWeatherConflict(flight) && (
                   <div className="mb-4 p-2 bg-red-100 border border-red-200 rounded text-sm text-red-700">
                     <AlertTriangle className="h-3 w-3 inline mr-1" />
-                    Weather conflict detected - needs rescheduling
+                    Weather Conflict:{' '}
+                    {formatWeatherConflictMessage(flight) || 'Weather conflict detected — awaiting detailed report.'}
                   </div>
                 )}
 
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className={`w-full ${
-                      flight.status === 'conflict'
-                        ? 'border-red-300 text-red-700 hover:bg-red-50 bg-transparent'
-                        : 'border-blue-300 text-blue-700 hover:bg-blue-50 bg-transparent'
-                    }`}
-                    onClick={() => handleReschedule(flight)}
-                  >
-                    AI Reschedule
-                  </Button>
+                <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+                  <div className="text-sm text-slate-600">
+                    <span className="text-slate-900 font-medium">{formatAircraftLabel(flight.aircraft)}</span>
+                    {' • '}
+                    <span className="text-slate-700">{flight.student?.trainingLevel || 'Unknown Level'}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className={`${
+                        flight.status === 'conflict'
+                          ? 'border-red-300 text-red-700 hover:bg-red-50 bg-transparent'
+                          : 'border-blue-300 text-blue-700 hover:bg-blue-50 bg-transparent'
+                      }`}
+                      onClick={() => handleReschedule(flight)}
+                    >
+                      AI Reschedule
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))

@@ -6,13 +6,13 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Search, Plus, Filter, Plane, MapPin, Clock, User, Calendar, AlertTriangle, RefreshCw } from "lucide-react"
+import { Search, Plane, AlertTriangle, RefreshCw } from "lucide-react"
 import { useState, useEffect } from "react"
 import { RescheduleDialog } from "@/components/reschedule-dialog"
 import { api, Booking } from "@/lib/api"
-import { format } from "date-fns"
-import { formatShortRoute, formatWeatherConflictMessage } from "@/lib/utils"
+import { formatWeatherConflictMessage, formatAircraftLabel } from "@/lib/utils"
 import { REFRESH_INTERVALS, PAGINATION } from "@/lib/config"
+import { FlightInfoGrid } from "./flight-info-grid"
 
 export function FlightsList() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -105,14 +105,6 @@ export function FlightsList() {
     setRescheduleOpen(true)
   }
 
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'MMM d, yyyy')
-  }
-
-  const formatTime = (dateString: string) => {
-    return format(new Date(dateString), 'h:mm a')
-  }
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed':
@@ -131,10 +123,14 @@ export function FlightsList() {
   }
 
   const hasWeatherConflict = (booking: Booking) => {
-    return booking.status === 'conflict' &&
-           booking.weatherReports &&
-           booking.weatherReports.length > 0 &&
-           !booking.weatherReports[0].isSafe
+    if (booking.status === 'conflict') {
+      return true
+    }
+    return Boolean(
+      booking.weatherReports &&
+      booking.weatherReports.length > 0 &&
+      booking.weatherReports.some(report => report && report.isSafe === false)
+    )
   }
 
   const getWeatherConflictMessage = (booking: Booking) => {
@@ -313,53 +309,23 @@ export function FlightsList() {
                     </div>
                   </div>
 
-                  {getWeatherConflictMessage(flight) && (
+                  {hasWeatherConflict(flight) && (
                     <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg">
                       <p className="text-sm text-red-700 font-medium">
-                        Weather Conflict: {getWeatherConflictMessage(flight)}
+                        Weather Conflict:{' '}
+                        {getWeatherConflictMessage(flight) || 'Weather conflict detected — awaiting detailed report.'}
                       </p>
                     </div>
                   )}
 
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-slate-500" />
-                      <div>
-                        <p className="text-xs text-slate-500">Date</p>
-                        <p className="text-sm text-slate-700">{formatDate(flight.scheduledDate)}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-slate-500" />
-                      <div>
-                        <p className="text-xs text-slate-500">Time</p>
-                        <p className="text-sm text-slate-700">{formatTime(flight.scheduledDate)}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-slate-500" />
-                      <div>
-                        <p className="text-xs text-slate-500">Route</p>
-                        <p className="text-sm text-slate-700">
-                          {formatShortRoute(flight.departureLat, flight.departureLon, flight.arrivalLat, flight.arrivalLon)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-slate-500" />
-                      <div>
-                        <p className="text-xs text-slate-500">Instructor</p>
-                        <p className="text-sm text-slate-700">
-                          {flight.instructor?.name || 'Unassigned'}
-                        </p>
-                      </div>
-                    </div>
+                  <div className="mb-4">
+                    <FlightInfoGrid flight={flight} />
                   </div>
 
                   <div className="flex items-center justify-between pt-4 border-t border-slate-300">
                     <div className="text-sm text-slate-600">
                       <span className="text-slate-900 font-medium">
-                        {flight.aircraft?.tailNumber || 'Unassigned Aircraft'}
+                        {formatAircraftLabel(flight.aircraft)}
                       </span>
                       {' • '}
                       <span className="text-slate-700">

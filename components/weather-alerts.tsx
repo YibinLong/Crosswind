@@ -6,16 +6,17 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { AlertTriangle, Cloud, Wind, CloudRain, RefreshCw, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
-import { api } from "@/lib/api"
+import { api, Booking } from "@/lib/api"
 import { RescheduleDialog } from "./reschedule-dialog"
 import { REFRESH_INTERVALS } from "@/lib/config"
 import {
   formatWeatherNumber,
-  formatWindSpeed,
   formatVisibility,
   formatCeiling,
-  formatViolatedMinimums
+  formatViolatedMinimums,
+  formatAircraftLabel
 } from "@/lib/utils"
+import { FlightInfoGrid } from "./flight-info-grid"
 
 interface Alert {
   id: number
@@ -26,19 +27,31 @@ interface Alert {
   flight: {
     id: number
     student: {
+      id: number
       name: string
       trainingLevel: string
+      email?: string
     }
     instructor?: {
+      id: number
       name: string
       email: string
     }
     aircraft?: {
+      id: number
       tailNumber: string
       model: string
     }
     scheduledDate: string
     status: string
+    departure?: {
+      lat: number
+      lon: number
+    }
+    arrival?: {
+      lat: number
+      lon: number
+    }
   }
   weather?: {
     windKts: number
@@ -149,38 +162,47 @@ export function WeatherAlerts() {
   }
 
   // Convert Alert to Booking for RescheduleDialog
-  const alertToBooking = (alert: Alert) => {
+  const alertToBooking = (alert: Alert): Booking => {
+    const departureLat = alert.flight.departure?.lat ?? 0
+    const departureLon = alert.flight.departure?.lon ?? 0
+    const arrivalLat = alert.flight.arrival?.lat ?? departureLat
+    const arrivalLon = alert.flight.arrival?.lon ?? departureLon
+
     return {
       id: alert.flight.id,
-      studentId: alert.flight.student.id,
+      studentId: alert.flight.student?.id || 0,
+      instructorId: alert.flight.instructor?.id || 0,
+      aircraftId: alert.flight.aircraft?.id || 0,
       scheduledDate: alert.flight.scheduledDate,
+      departureLat,
+      departureLon,
+      arrivalLat,
+      arrivalLon,
+      status: alert.flight.status as Booking['status'],
+      createdAt: alert.createdAt,
+      updatedAt: alert.createdAt,
       student: alert.flight.student,
       instructor: alert.flight.instructor,
       aircraft: alert.flight.aircraft,
-      status: alert.flight.status,
-      weatherReports: alert.weather ? [alert.weather] : []
-    }
-  }
-
-  const formatScheduledTime = (dateString: string) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const hoursUntil = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60))
-
-    if (hoursUntil < 24) {
-      return date.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      })
-    } else {
-      return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      })
+      weatherReports: alert.weather
+        ? [{
+            id: alert.id,
+            windKts: alert.weather.windKts,
+            windGustKts: alert.weather.windGustKts,
+            visibility: alert.weather.visibility,
+            ceilingFt: alert.weather.ceilingFt,
+            condition: alert.weather.condition,
+            temperature: alert.weather.temperature,
+            isSafe: alert.weather.isSafe,
+            violatedMinimums: alert.weather.violatedMinimums,
+            createdAt: alert.weather.reportTime
+          }]
+        : [],
+      rescheduleSuggestions: alert.reschedule?.suggestions?.map((suggestion) => ({
+        ...suggestion,
+        selected: false,
+        createdAt: alert.createdAt
+      })) || []
     }
   }
 
@@ -322,7 +344,16 @@ export function WeatherAlerts() {
             <p className="text-sm">All flights are clear for takeoff</p>
           </div>
         ) : (
-          alerts.map((alert) => (
+          alerts.map((alert) => {
+            const normalizedFlight = {
+              ...alert.flight,
+              departureLat: alert.flight.departure?.lat,
+              departureLon: alert.flight.departure?.lon,
+              arrivalLat: alert.flight.arrival?.lat,
+              arrivalLon: alert.flight.arrival?.lon
+            }
+
+            return (
             <Alert
               key={alert.id}
               className={`border-2 ${getSeverityColor(alert.severity)}`}
@@ -334,28 +365,8 @@ export function WeatherAlerts() {
                     {alert.title}
                   </AlertTitle>
                   <AlertDescription className="text-slate-700 space-y-2">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-slate-500">Student:</span>
-                        <span className="ml-2 font-medium text-slate-900">{alert.flight.student.name}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500">Scheduled:</span>
-                        <span className="ml-2 font-medium text-slate-900">{formatScheduledTime(alert.flight.scheduledDate)}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500">Aircraft:</span>
-                        <span className="ml-2 font-medium text-slate-900">
-                          {alert.flight.aircraft
-                            ? `${alert.flight.aircraft.tailNumber} (${alert.flight.aircraft.model})`
-                            : 'Unassigned'
-                          }
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500">Level:</span>
-                        <span className="ml-2 font-medium text-slate-900">{alert.flight.student.trainingLevel}</span>
-                      </div>
+                    <div className="mb-3">
+                      <FlightInfoGrid flight={normalizedFlight} />
                     </div>
 
                     {alert.weather && (
@@ -385,6 +396,7 @@ export function WeatherAlerts() {
                           size="sm"
                           onClick={() => handleReschedule(alert)}
                           className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-lg shadow-blue-200"
+                          data-testid={`alert-reschedule-button-${alert.id}`}
                         >
                           AI Reschedule ({alert.reschedule.availableOptions} options)
                         </Button>
@@ -393,6 +405,7 @@ export function WeatherAlerts() {
                           size="sm"
                           onClick={() => handleReschedule(alert)}
                           className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-lg shadow-blue-200"
+                          data-testid={`alert-reschedule-button-${alert.id}`}
                         >
                           AI Reschedule
                         </Button>
@@ -412,7 +425,7 @@ export function WeatherAlerts() {
                 </div>
               </div>
             </Alert>
-          ))
+          )})
         )}
 
         </CardContent>

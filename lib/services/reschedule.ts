@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { weatherService } from './weather';
 import { openAIService, AIRescheduleSuggestion, RescheduleContext, RescheduleConstraints } from './openai';
 import { WeatherData, WEATHER_MINIMUMS } from '@/lib/types';
+import { WeatherMinimumsService } from './weatherMinimums';
 
 // Enhanced interfaces for database operations
 export interface RescheduleRequest {
@@ -186,7 +187,36 @@ export class RescheduleService {
   private async buildRescheduleContext(booking: any, constraints?: Partial<RescheduleConstraints>): Promise<RescheduleContext> {
     // Get weather data for the conflict
     const weatherReports = booking.weatherReports || [];
-    const currentWeather = weatherReports[0];
+    let currentWeather = weatherReports[0];
+    let weatherDataSource: 'report' | 'live_fetch' = 'report';
+    let liveWeatherData: WeatherData | null = null;
+
+    if (!currentWeather) {
+      const departureWeather = await weatherService.fetchWeatherByCoordinates(
+        booking.departureLat,
+        booking.departureLon
+      );
+      liveWeatherData = departureWeather;
+      const evaluation = WeatherMinimumsService.evaluateWeatherSafety(
+        departureWeather,
+        booking.student.trainingLevel
+      );
+
+      currentWeather = {
+        location: 'departure',
+        windKts: departureWeather.windSpeed,
+        windGustKts: departureWeather.windGust,
+        visibility: departureWeather.visibility,
+        ceilingFt: evaluation.evaluatedMinimums.ceiling.actual,
+        condition: departureWeather.conditions,
+        temperature: departureWeather.temperature,
+        isSafe: true,
+        violatedMinimums: [],
+        createdAt: new Date()
+      };
+
+      weatherDataSource = 'live_fetch';
+    }
 
     // Fetch 7-day forecast for departure and arrival locations
     const forecastData = await this.fetchSevenDayForecast(
@@ -200,7 +230,9 @@ export class RescheduleService {
     const mockAvailableSlots = this.generateMockAvailableSlots(booking, forecastData);
 
     // Determine weather conflict reasons
-    const violationReasons = currentWeather?.violatedMinimums || ['Weather conditions below minimums'];
+    const violationReasons = currentWeather?.violatedMinimums?.length
+      ? currentWeather.violatedMinimums
+      : ['No active weather violations'];
 
     return {
       originalBooking: {
@@ -218,7 +250,9 @@ export class RescheduleService {
       weatherConflict: {
         violationReasons,
         currentConditions: this.parseWeatherReport(currentWeather),
-        forecast: forecastData
+        forecast: forecastData,
+        dataSource: weatherDataSource,
+        rawCurrentWeather: liveWeatherData
       },
       constraints: {
         trainingLevel: booking.student.trainingLevel,

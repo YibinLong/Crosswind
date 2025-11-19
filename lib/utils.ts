@@ -5,6 +5,30 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export interface KnownLocation {
+  name: string
+  lat: number
+  lon: number
+}
+
+const KNOWN_LOCATIONS: KnownLocation[] = [
+  { name: 'San Francisco', lat: 37.7749, lon: -122.4194 },
+  { name: 'San Jose', lat: 37.3382, lon: -121.8863 },
+  { name: 'Oakland', lat: 37.8044, lon: -122.2712 },
+  { name: 'Sacramento', lat: 38.5816, lon: -121.4944 },
+  { name: 'Fresno', lat: 36.7783, lon: -119.4179 },
+  { name: 'Seattle', lat: 47.6062, lon: -122.3321 },
+  { name: 'Portland', lat: 45.5152, lon: -122.6784 },
+  { name: 'Los Angeles', lat: 34.0522, lon: -118.2437 },
+  { name: 'Phoenix', lat: 33.4484, lon: -112.074 },
+  { name: 'Denver', lat: 39.7392, lon: -104.9903 },
+  { name: 'Chicago', lat: 41.8781, lon: -87.6298 },
+  { name: 'New York', lat: 40.7128, lon: -74.006 },
+  { name: 'Miami', lat: 25.7617, lon: -80.1918 }
+]
+
+const CITY_MATCH_THRESHOLD_KM = 80
+
 // Flight route utilities
 export const formatRoute = (
   departureLat: number,
@@ -29,6 +53,67 @@ export const formatShortRoute = (
   arrivalLon: number
 ): string => {
   return `${departureLat.toFixed(2)},${departureLon.toFixed(2)} → ${arrivalLat.toFixed(2)},${arrivalLon.toFixed(2)}`
+}
+
+export const getCityFromCoordinates = (
+  latitude?: number | null,
+  longitude?: number | null
+): string | null => {
+  if (typeof latitude !== 'number' || typeof longitude !== 'number') {
+    return null
+  }
+
+  let closest: { location: KnownLocation; distance: number } | null = null
+
+  for (const location of KNOWN_LOCATIONS) {
+    const distance = calculateDistance(latitude, longitude, location.lat, location.lon)
+    if (!closest || distance < closest.distance) {
+      closest = { location, distance }
+    }
+  }
+
+  if (closest && closest.distance <= CITY_MATCH_THRESHOLD_KM) {
+    return closest.location.name
+  }
+
+  return null
+}
+
+export const formatRouteLocations = (
+  departureLat?: number | null,
+  departureLon?: number | null,
+  arrivalLat?: number | null,
+  arrivalLon?: number | null
+): string => {
+  const departureCity = getCityFromCoordinates(departureLat, departureLon)
+  const arrivalCity = getCityFromCoordinates(arrivalLat, arrivalLon)
+
+  if (departureCity && arrivalCity) {
+    return `${departureCity} → ${arrivalCity}`
+  }
+
+  if (departureCity && typeof arrivalLat === 'number' && typeof arrivalLon === 'number') {
+    return `${departureCity} → ${arrivalLat.toFixed(2)},${arrivalLon.toFixed(2)}`
+  }
+
+  if (arrivalCity && typeof departureLat === 'number' && typeof departureLon === 'number') {
+    return `${departureLat.toFixed(2)},${departureLon.toFixed(2)} → ${arrivalCity}`
+  }
+
+  if (
+    typeof departureLat === 'number' &&
+    typeof departureLon === 'number' &&
+    typeof arrivalLat === 'number' &&
+    typeof arrivalLon === 'number'
+  ) {
+    return formatShortRoute(departureLat, departureLon, arrivalLat, arrivalLon)
+  }
+
+  if (typeof departureLat === 'number' && typeof departureLon === 'number') {
+    return `${departureLat.toFixed(2)},${departureLon.toFixed(2)}`
+  }
+
+  return 'Route unavailable'
 }
 
 // Calculate approximate distance between coordinates (simplified)
@@ -70,6 +155,26 @@ export const formatCeiling = (ceilingFt: number): string => {
   return `${formatWeatherNumber(ceilingFt)}ft`
 }
 
+export const formatAircraftLabel = (
+  aircraft?: {
+    model?: string | null
+    tailNumber?: string | null
+  } | null
+): string => {
+  if (!aircraft) {
+    return 'Unassigned Aircraft'
+  }
+
+  const model = aircraft.model?.trim()
+  const tailNumber = aircraft.tailNumber?.trim()
+
+  if (model && tailNumber) {
+    return `${model} (${tailNumber})`
+  }
+
+  return model || tailNumber || 'Unassigned Aircraft'
+}
+
 // Format violated minimums with proper capitalization
 export const formatViolatedMinimums = (violatedMinimums: string[]): string => {
   return violatedMinimums
@@ -92,13 +197,13 @@ export const formatWeatherConflictMessage = (booking: any): string | null => {
   const issues = weatherReport.violatedMinimums || []
 
   if (issues.includes('wind')) {
-    return `Wind ${formatWeatherNumber(weatherReport.windKts)}kt${weatherReport.windGustKts ? ` gusting ${formatWeatherNumber(weatherReport.windGustKts)}kt` : ''} exceeds limits`
+    return `Wind ${formatWeatherNumber(weatherReport.windKts ?? 0)}kt${weatherReport.windGustKts ? ` gusting ${formatWeatherNumber(weatherReport.windGustKts)}kt` : ''} exceeds limits`
   }
   if (issues.includes('visibility')) {
-    return `Visibility ${formatWeatherNumber(weatherReport.visibility)}mi below minimum`
+    return `Visibility ${formatVisibility(weatherReport.visibility ?? 0)} below minimum`
   }
   if (issues.includes('ceiling')) {
-    return `Ceiling ${formatWeatherNumber(weatherReport.ceilingFt)}ft below minimum`
+    return `Ceiling ${formatCeiling(weatherReport.ceilingFt ?? 0)} below minimum`
   }
 
   return `Weather conditions: ${weatherReport.condition}`

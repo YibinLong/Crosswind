@@ -88,6 +88,10 @@ async function addSampleDataForExistingUsers() {
       if (!user.student) continue;
 
       const student = user.student;
+      console.log(`Clearing existing flights for ${student.name} (${student.email})`);
+      await prisma.booking.deleteMany({
+        where: { studentId: student.id }
+      });
       console.log(`Creating 4 flights for ${student.name} (${student.email})`);
 
       const now = new Date();

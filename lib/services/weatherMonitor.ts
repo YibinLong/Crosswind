@@ -98,6 +98,15 @@ export class WeatherMonitorService {
             continue;
           }
 
+          const conflictSources: string[] = [];
+          let aggregatedViolations: string[] = [];
+          const corridorSummaries: Array<{
+            label: string;
+            weather: any;
+            isSafe: boolean;
+            violatedMinimums: string[];
+          }> = [];
+
           // Fetch weather for departure location
           const departureWeather = await weatherService.fetchWeatherByCoordinates(
             booking.departureLat,
@@ -109,6 +118,10 @@ export class WeatherMonitorService {
             departureWeather,
             booking.student.trainingLevel
           );
+          if (!safetyEvaluation.isSafe) {
+            conflictSources.push('departure');
+          }
+          aggregatedViolations = aggregatedViolations.concat(safetyEvaluation.violatedMinimums);
 
           // Create weather report
           const departureWeatherReport = await this.prisma.weatherReport.create({
@@ -128,16 +141,22 @@ export class WeatherMonitorService {
 
           // If arrival coordinates exist, check arrival weather too
           let arrivalSafety = null;
+          let arrivalWeatherData: any = null;
           if (booking.arrivalLat && booking.arrivalLon) {
             const arrivalWeather = await weatherService.fetchWeatherByCoordinates(
               booking.arrivalLat,
               booking.arrivalLon
             );
+            arrivalWeatherData = arrivalWeather;
 
             arrivalSafety = WeatherMinimumsService.evaluateWeatherSafety(
               arrivalWeather,
               booking.student.trainingLevel
             );
+            if (!arrivalSafety.isSafe) {
+              conflictSources.push('arrival');
+            }
+            aggregatedViolations = aggregatedViolations.concat(arrivalSafety.violatedMinimums);
 
             await this.prisma.weatherReport.create({
               data: {
@@ -156,8 +175,62 @@ export class WeatherMonitorService {
           }
 
           // Determine overall safety (unsafe if either departure or arrival is unsafe)
-          const isOverallSafe = safetyEvaluation.isSafe &&
+          let isOverallSafe = safetyEvaluation.isSafe &&
             (!arrivalSafety || arrivalSafety.isSafe);
+
+          // Corridor checks between departure and arrival
+          const corridorWaypoints = this.generateCorridorWaypoints(
+            booking.departureLat,
+            booking.departureLon,
+            booking.arrivalLat,
+            booking.arrivalLon
+          );
+
+          if (corridorWaypoints.length > 0) {
+            for (const waypoint of corridorWaypoints) {
+              const waypointWeather = await weatherService.fetchWeatherByCoordinates(
+                waypoint.lat,
+                waypoint.lon
+              );
+              const corridorSafety = WeatherMinimumsService.evaluateWeatherSafety(
+                waypointWeather,
+                booking.student.trainingLevel
+              );
+
+              await this.prisma.weatherReport.create({
+                data: {
+                  bookingId: booking.id,
+                  location: waypoint.label,
+                  windKts: waypointWeather.windSpeed,
+                  windGustKts: waypointWeather.windGust,
+                  visibility: waypointWeather.visibility,
+                  ceilingFt: corridorSafety.evaluatedMinimums.ceiling.actual,
+                  condition: waypointWeather.conditions,
+                  temperature: waypointWeather.temperature,
+                  isSafe: corridorSafety.isSafe,
+                  violatedMinimums: corridorSafety.violatedMinimums
+                }
+              });
+
+              corridorSummaries.push({
+                label: waypoint.label,
+                weather: waypointWeather,
+                isSafe: corridorSafety.isSafe,
+                violatedMinimums: corridorSafety.violatedMinimums
+              });
+
+              if (!corridorSafety.isSafe) {
+                conflictSources.push(waypoint.label);
+                isOverallSafe = false;
+              }
+
+              aggregatedViolations = aggregatedViolations.concat(
+                corridorSafety.violatedMinimums.map(minimum => `${waypoint.label}: ${minimum}`)
+              );
+
+              await this.delay(750);
+            }
+          }
 
           // Update booking status if there's a conflict
           if (!isOverallSafe && booking.status !== 'conflict') {
@@ -172,30 +245,27 @@ export class WeatherMonitorService {
                 bookingId: booking.id,
                 action: 'weather_conflict_detected',
                 performedBy: 'system',
-                details: `Automated monitoring detected weather conflict. Violated minimums: ${[
-                  ...safetyEvaluation.violatedMinimums,
-                  ...(arrivalSafety?.violatedMinimums || [])
-                ].join('; ')}`
+                details: `Automated monitoring detected weather conflict. Violated minimums: ${aggregatedViolations.join('; ')}`
               }
             });
 
             // Send email notifications for the new conflict
-            await this.sendWeatherConflictNotifications(booking, departureWeatherReport, arrivalSafety, [
-              ...safetyEvaluation.violatedMinimums,
-              ...(arrivalSafety?.violatedMinimums || [])
-            ]);
+            await this.sendWeatherConflictNotifications(booking, departureWeatherReport, arrivalSafety, aggregatedViolations);
           }
+
+          const detailWeather = {
+            departure: departureWeather,
+            arrival: arrivalWeatherData,
+            corridor: corridorSummaries
+          };
 
           result.details.push({
             bookingId: booking.id,
             studentName: booking.student.name,
-            location: 'departure',
+            location: conflictSources.length > 0 ? conflictSources.join(', ') : 'all-clear',
             status: isOverallSafe ? 'safe' : 'conflict',
-            weatherData: departureWeather,
-            violatedMinimums: [
-              ...safetyEvaluation.violatedMinimums,
-              ...(arrivalSafety?.violatedMinimums || [])
-            ]
+            weatherData: detailWeather,
+            violatedMinimums: aggregatedViolations
           });
 
           result.bookingsChecked++;
@@ -449,6 +519,29 @@ export class WeatherMonitorService {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
+  }
+
+  private generateCorridorWaypoints(
+    departureLat: number,
+    departureLon: number,
+    arrivalLat?: number | null,
+    arrivalLon?: number | null,
+    segments: number = 3
+  ): Array<{ lat: number; lon: number; label: string }> {
+    if (typeof arrivalLat !== 'number' || typeof arrivalLon !== 'number') {
+      return [];
+    }
+
+    const waypoints: Array<{ lat: number; lon: number; label: string }> = [];
+    for (let i = 1; i <= segments; i++) {
+      const fraction = i / (segments + 1);
+      waypoints.push({
+        lat: departureLat + (arrivalLat - departureLat) * fraction,
+        lon: departureLon + (arrivalLon - departureLon) * fraction,
+        label: `corridor-${i}`
+      });
+    }
+    return waypoints;
   }
 
   /**

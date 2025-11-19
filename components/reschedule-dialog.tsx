@@ -31,6 +31,7 @@ export function RescheduleDialog({ open, onOpenChange, flight, onSuccess }: Resc
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
+  const [generationComplete, setGenerationComplete] = useState(false)
 
   useEffect(() => {
     if (open && flight && !hasLoadedOnce) {
@@ -43,6 +44,7 @@ export function RescheduleDialog({ open, onOpenChange, flight, onSuccess }: Resc
       setSuggestions([])
       setError(null)
       setHasLoadedOnce(false)
+      setGenerationComplete(false)
       setIsGenerating(false)
     }
   }, [open, flight, hasLoadedOnce])
@@ -54,6 +56,7 @@ export function RescheduleDialog({ open, onOpenChange, flight, onSuccess }: Resc
       setLoading(true)
       setError(null)
       setIsGenerating(true)
+      setGenerationComplete(false)
 
       // Debug: Log authentication state
       const token = localStorage.getItem('auth_token')
@@ -120,6 +123,9 @@ export function RescheduleDialog({ open, onOpenChange, flight, onSuccess }: Resc
       })
 
       setSuggestions(suggestions)
+      if (suggestions.length === 0) {
+        toast.info('No AI reschedule options were returned. Try regenerating once weather data refreshes.')
+      }
 
     } catch (error: any) {
       console.error('❌ [ERROR] Failed to generate reschedule suggestions:', error)
@@ -147,6 +153,7 @@ export function RescheduleDialog({ open, onOpenChange, flight, onSuccess }: Resc
     } finally {
       setLoading(false)
       setIsGenerating(false)
+      setGenerationComplete(true)
     }
   }
 
@@ -367,7 +374,7 @@ export function RescheduleDialog({ open, onOpenChange, flight, onSuccess }: Resc
                 </Card>
               ))}
             </div>
-          ) : suggestions.length === 0 && !error ? (
+          ) : suggestions.length === 0 && !error && generationComplete && !isGenerating ? (
             <div className="text-center py-8">
               <Sparkles className="h-12 w-12 text-slate-300 mx-auto mb-4" />
               <p className="text-slate-500">No suggestions available</p>

@@ -39,6 +39,8 @@ export interface RescheduleContext {
     violationReasons: string[];
     currentConditions: WeatherData;
     forecast: WeatherData[];
+    dataSource?: 'report' | 'live_fetch';
+    rawCurrentWeather?: WeatherData | null;
   };
 
   // Constraints
@@ -159,6 +161,7 @@ WEATHER CONFLICT:
 - Wind: ${weatherConflict.currentConditions.windSpeed} knots (gusting to ${weatherConflict.currentConditions.windGust || 'N/A'} knots)
 - Visibility: ${weatherConflict.currentConditions.visibility} miles
 - Temperature: ${weatherConflict.currentConditions.temperature}°C
+- Weather Source: ${weatherConflict.dataSource === 'live_fetch' ? 'Live fetch' : 'Recent report'}
 
 TRAINING LEVEL WEATHER MINIMUMS:
 ${JSON.stringify(WEATHER_MINIMUMS[constraints.trainingLevel as keyof typeof WEATHER_MINIMUMS] || WEATHER_MINIMUMS['student-pilot'], null, 2)}
@@ -261,27 +264,38 @@ Provide responses in JSON format as requested. Be specific about weather conditi
    * Generate rule-based fallback suggestions when AI fails
    */
   private generateFallbackSuggestions(context: RescheduleContext): AIRescheduleSuggestion[] {
-    const { mockAvailableSlots, weatherConflict, originalBooking } = context;
+    const { mockAvailableSlots, weatherConflict } = context;
+
+    const baselineVisibility = weatherConflict.currentConditions.visibility || 0;
+    const baselineWind = weatherConflict.currentConditions.windSpeed || 0;
+    const hasVisibilityBaseline = baselineVisibility > 0;
+    const hasWindBaseline = baselineWind > 0;
 
     // Filter for slots with better weather
     const goodWeatherSlots = mockAvailableSlots.filter(slot => {
       const forecast = slot.weatherForecast;
       if (!forecast) return false;
 
-      // Simple heuristic: better conditions than current conflict
-      return forecast.visibility > weatherConflict.currentConditions.visibility &&
-             forecast.windSpeed < weatherConflict.currentConditions.windSpeed;
+      // Simple heuristic: better conditions than current conflict or baseline
+      const visibilityImproved = !hasVisibilityBaseline || forecast.visibility > baselineVisibility;
+      const windImproved = !hasWindBaseline || forecast.windSpeed < baselineWind;
+
+      return visibilityImproved && windImproved;
     });
 
+    const candidateSlots = (goodWeatherSlots.length > 0 ? goodWeatherSlots : mockAvailableSlots).slice(0, 3);
+
     // Take top 3 best options
-    return goodWeatherSlots.slice(0, 3).map((slot, index) => ({
+    return candidateSlots.map((slot, index) => ({
       proposedDate: slot.date,
       proposedTime: slot.time,
       confidence: 0.65 + (index * 0.05), // Varying confidence: 65%, 70%, 75%
-      reason: 'Rule-based suggestion: Improved weather conditions expected',
-      weatherSummary: `${slot.weatherForecast?.conditions || 'Improved conditions'} - Wind: ${slot.weatherForecast?.windSpeed} knots, Visibility: ${slot.weatherForecast?.visibility} miles`,
+      reason: goodWeatherSlots.length > 0
+        ? 'Rule-based suggestion: Improved weather conditions expected'
+        : 'Opportunity to optimise schedule despite safe current weather.',
+      weatherSummary: `${slot.weatherForecast?.conditions || 'Improved conditions'} - Wind: ${slot.weatherForecast?.windSpeed || 'N/A'} knots, Visibility: ${slot.weatherForecast?.visibility || 'N/A'} miles`,
       advantages: [
-        'Better weather conditions than current slot',
+        goodWeatherSlots.length > 0 ? 'Better weather conditions than current slot' : 'Maintains proactive scheduling cadence',
         'Meets training level requirements'
       ],
       considerations: [
